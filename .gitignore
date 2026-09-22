@@ -1,0 +1,44 @@
+# Visual Studio
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+
+# Build output
+**/bin/
+**/obj/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Uploaded images
+**/wwwroot/uploads/*
+!**/wwwroot/uploads/.gitkeep
+
+# Local database files
+*.mdf
+*.ldf
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak

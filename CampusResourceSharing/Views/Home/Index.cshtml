@@ -1,0 +1,130 @@
+﻿@model IEnumerable<CampusResourceSharing.Models.Item>
+
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Home";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+<div class="container mt-4">
+
+    <div class="text-center mb-5">
+        <h1 class="display-5">
+            Campus Resource Sharing
+        </h1>
+
+        <p class="lead text-muted">
+            Discover useful resources shared by students.
+        </p>
+    </div>
+
+
+    <h2 class="mb-4">
+        Available Items
+    </h2>
+
+
+    <div class="row">
+
+        @foreach (var item in Model)
+        {
+            <div class="col-md-4 mb-4">
+
+                <div class="card h-100 shadow-sm">
+
+                    @if (!string.IsNullOrEmpty(item.ImagePath))
+                    {
+                        <img src="@item.ImagePath"
+                             class="card-img-top"
+                             style="height:220px; object-fit:cover;"
+                             alt="@item.Name">
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center justify-content-center bg-light"
+                             style="height:220px;">
+
+                            <span class="text-muted">
+                                No Image
+                            </span>
+
+                        </div>
+                    }
+
+
+                    <div class="card-body">
+
+                        <h5 class="card-title">
+                            @item.Name
+                        </h5>
+
+                        <p class="card-text">
+                            @item.Description
+                        </p>
+
+                        <p>
+                            <strong>Category:</strong>
+                            @item.Category
+                        </p>
+
+                        <p>
+                            <strong>Condition:</strong>
+                            @item.Condition
+                        </p>
+
+                        <span class="badge bg-success">
+                            Available
+                        </span>
+
+                    </div>
+
+
+                    <div class="card-footer">
+
+                        <a asp-controller="Item"
+                           asp-action="Details"
+                           asp-route-id="@item.Id"
+                           class="btn btn-outline-primary">
+                            View Details
+                        </a>
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a asp-controller="Request"
+                               asp-action="Create"
+                               asp-route-itemId="@item.Id"
+                               class="btn btn-primary ms-2">
+                                Request Item
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-area="Identity"
+                               asp-page="/Account/Login"
+                               asp-route-returnUrl="@Url.Action("Index", "Home")"
+                               class="btn btn-primary ms-2">
+                                Login to Request
+                            </a>
+                        }
+
+                        
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center">
+            No items are currently available.
+        </div>
+    }
+
+</div>

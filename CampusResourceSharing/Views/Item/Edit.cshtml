@@ -1,0 +1,171 @@
+@model CampusResourceSharing.ViewModels.ItemEditViewModel
+
+@{
+    ViewData["Title"] = "Edit Item";
+}
+
+<div class="container mt-4">
+
+    <h1>Edit Item</h1>
+
+    <div class="row">
+        <div class="col-md-7">
+
+            <form asp-action="Edit"
+                  method="post"
+                  enctype="multipart/form-data">
+
+                <input type="hidden"
+                       asp-for="Id" />
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Name"
+                           class="form-label"></label>
+
+                    <input asp-for="Name"
+                           class="form-control" />
+
+                    <span asp-validation-for="Name"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description"
+                           class="form-label"></label>
+
+                    <textarea asp-for="Description"
+                              class="form-control"
+                              rows="4"></textarea>
+
+                    <span asp-validation-for="Description"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Category"
+                           class="form-label"></label>
+
+                    <input asp-for="Category"
+                           class="form-control" />
+
+                    <span asp-validation-for="Category"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Condition"
+                           class="form-label"></label>
+
+                    <select asp-for="Condition"
+                            class="form-select">
+
+                        <option value="">
+                            Select condition
+                        </option>
+
+                        <option value="New">
+                            New
+                        </option>
+
+                        <option value="Excellent">
+                            Excellent
+                        </option>
+
+                        <option value="Good">
+                            Good
+                        </option>
+
+                        <option value="Fair">
+                            Fair
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="Condition"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.ExistingImagePath))
+                {
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Current Image
+                        </label>
+
+                        <div>
+                            <img src="@Model.ExistingImagePath"
+                                 alt="@Model.Name"
+                                 class="img-thumbnail"
+                                 style="max-width: 250px; max-height: 200px; object-fit: cover;" />
+                        </div>
+
+                    </div>
+                }
+
+                <div class="mb-3">
+
+                    <label asp-for="Image"
+                           class="form-label">
+                        Change Image
+                    </label>
+
+                    <input asp-for="Image"
+                           type="file"
+                           class="form-control"
+                           accept=".jpg,.jpeg,.png,.webp" />
+
+                    <div class="form-text">
+                        Leave empty to keep the current image.
+                        Allowed formats: JPG, JPEG, PNG, WEBP.
+                        Maximum size: 5 MB.
+                    </div>
+
+                    <span asp-validation-for="Image"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="form-check mb-3">
+
+                    <input asp-for="IsAvailable"
+                           class="form-check-input" />
+
+                    <label asp-for="IsAvailable"
+                           class="form-check-label">
+                    </label>
+
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Save Changes
+                </button>
+
+                <a asp-action="MyItems"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}

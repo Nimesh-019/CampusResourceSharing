@@ -1,0 +1,137 @@
+@model IEnumerable<CampusResourceSharing.Models.Request>
+
+@{
+    ViewData["Title"] = "Incoming Requests";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Incoming Requests</h2>
+        <span class="badge bg-secondary fs-6">Total: @Model.Count()</span>
+    </div>
+
+    <p class="text-muted">Requests made by other students for your shared items.</p>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info shadow-sm">
+            <h5 class="alert-heading mb-1">No Incoming Requests</h5>
+            <p class="mb-0">You currently have no incoming requests for your items.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive shadow-sm rounded">
+            <table class="table table-hover align-middle bg-white mb-0 border">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Item</th>
+                        <th>Requester</th>
+                        <th>Requested Duration</th>
+                        <th>Requested On</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var request in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@(request.Item?.Name ?? "Item #" + request.ItemId)</strong>
+                                <br />
+                                <small class="text-muted">Category: @request.Item?.Category</small>
+                            </td>
+                            <td>
+                                @(request.Requester?.UserName ?? request.RequesterId)
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    @request.StartDate.ToString("MMM dd, yyyy") &mdash; @request.EndDate.ToString("MMM dd, yyyy")
+                                </span>
+                                <br />
+                                <small class="text-muted">
+                                    @((request.EndDate.Date - request.StartDate.Date).Days + 1) day(s)
+                                </small>
+                            </td>
+                            <td>
+                                @request.RequestedAt.ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(request.Message))
+                                {
+                                    <span>@request.Message</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fs-7">No message</span>
+                                }
+                            </td>
+                            <td>
+                                @if (request.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else if (request.Status == "Accepted")
+                                {
+                                    <span class="badge bg-success">Accepted</span>
+                                }
+                                else if (request.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@request.Status</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (request.Status == "Pending")
+                                {
+                                    <div class="d-inline-flex gap-1">
+                                        <form asp-action="Accept" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@request.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                Accept
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="Reject" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@request.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to reject this request?');">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">&mdash;</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

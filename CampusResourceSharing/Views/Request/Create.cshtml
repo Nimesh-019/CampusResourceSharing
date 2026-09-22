@@ -1,0 +1,144 @@
+@using CampusResourceSharing.Models
+
+@{
+    ViewData["Title"] = "Request Item";
+    var item = ViewBag.Item as Item;
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+    var startDateVal = Context.Request.HasFormContentType ? Context.Request.Form["startDate"].FirstOrDefault() : null;
+    var endDateVal = Context.Request.HasFormContentType ? Context.Request.Form["endDate"].FirstOrDefault() : null;
+    var messageVal = Context.Request.HasFormContentType ? Context.Request.Form["message"].FirstOrDefault() : null;
+}
+
+<div class="container mt-4">
+
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Request Item</h3>
+                </div>
+
+                <div class="card-body">
+
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Notice:</strong> @ViewBag.ErrorMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <div asp-validation-summary="All" class="mb-0"></div>
+                        </div>
+                    }
+
+                    @if (item != null)
+                    {
+                        <div class="mb-4 p-3 bg-light rounded border">
+                            <h4>@item.Name</h4>
+
+                            @if (!string.IsNullOrEmpty(item.Description))
+                            {
+                                <p class="text-muted mb-2">
+                                    @item.Description
+                                </p>
+                            }
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="mb-0">
+                                        <strong>Category:</strong> @item.Category
+                                    </p>
+                                </div>
+                                @if (!string.IsNullOrEmpty(item.Condition))
+                                {
+                                    <div class="col-6">
+                                        <p class="mb-0">
+                                            <strong>Condition:</strong> @item.Condition
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <form asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="itemId"
+                                   value="@item.Id" />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">
+                                        Start Date
+                                    </label>
+                                    <input type="date"
+                                           name="startDate"
+                                           class="form-control"
+                                           min="@today"
+                                           value="@(startDateVal ?? today)"
+                                           required />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">
+                                        End Date
+                                    </label>
+                                    <input type="date"
+                                           name="endDate"
+                                           class="form-control"
+                                           min="@today"
+                                           value="@(endDateVal ?? today)"
+                                           required />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    Message
+                                </label>
+                                <textarea name="message"
+                                          class="form-control"
+                                          rows="4"
+                                          maxlength="500"
+                                          placeholder="Write a message to the owner...">@messageVal</textarea>
+                                <div class="form-text">
+                                    Optional. Maximum 500 characters.
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit"
+                                        class="btn btn-primary">
+                                    Submit Request
+                                </button>
+                                <a asp-controller="Item"
+                                   asp-action="Index"
+                                   class="btn btn-secondary">
+                                    Cancel
+                                </a>
+                            </div>
+
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            Item not found.
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>

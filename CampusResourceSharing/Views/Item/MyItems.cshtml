@@ -1,0 +1,126 @@
+﻿@model IEnumerable<CampusResourceSharing.Models.Item>
+
+@{
+    ViewData["Title"] = "My Items";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h1>My Items</h1>
+
+            <p class="text-muted">
+                Items that you have shared with other students.
+            </p>
+        </div>
+
+        <a asp-action="Create"
+           class="btn btn-primary">
+            + Add Item
+        </a>
+
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            You haven't shared any items yet.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+
+            @foreach (var item in Model)
+            {
+                <div class="col-md-4 mb-4">
+
+                    <div class="card h-100 shadow-sm">
+
+                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath"
+                                 class="card-img-top"
+                                 style="height:220px; object-fit:cover;"
+                                 alt="@item.Name" />
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center"
+                                 style="height:220px;">
+
+                                <span class="text-muted">
+                                    No Image
+                                </span>
+
+                            </div>
+                        }
+
+                        <div class="card-body">
+
+                            <h5 class="card-title">
+                                @item.Name
+                            </h5>
+
+                            <p class="card-text">
+                                @item.Description
+                            </p>
+
+                            <p>
+                                <strong>Category:</strong>
+                                @item.Category
+                            </p>
+
+                            <p>
+                                <strong>Condition:</strong>
+                                @item.Condition
+                            </p>
+
+                            @if (item.IsAvailable)
+                            {
+                                <span class="badge bg-success">
+                                    Available
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">
+                                    Not Available
+                                </span>
+                            }
+
+                        </div>
+
+                        <div class="card-footer bg-white">
+
+                            <a asp-action="Details"
+                               asp-route-id="@item.Id"
+                               class="btn btn-outline-primary btn-sm">
+                                Details
+                            </a>
+
+                            <a asp-action="Edit"
+                               asp-route-id="@item.Id"
+                               class="btn btn-outline-warning btn-sm">
+                                Edit
+                            </a>
+
+                            <a asp-action="Delete"
+                               asp-route-id="@item.Id"
+                               class="btn btn-outline-danger btn-sm">
+                                Delete
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>

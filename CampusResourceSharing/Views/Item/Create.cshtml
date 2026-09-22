@@ -1,0 +1,154 @@
+@model CampusResourceSharing.ViewModels.ItemCreateViewModel
+
+@{
+    ViewData["Title"] = "Create Item";
+}
+
+<div class="container mt-4">
+
+    <h1>Add Item</h1>
+
+    <p class="text-muted">
+        Share a resource with other students.
+    </p>
+
+    <div class="row">
+        <div class="col-md-7">
+
+            <form asp-action="Create"
+                  method="post"
+                  enctype="multipart/form-data">
+
+                <div asp-validation-summary="All"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Name"
+                           class="form-label"></label>
+
+                    <input asp-for="Name"
+                           class="form-control"
+                           placeholder="Enter item name" />
+
+                    <span asp-validation-for="Name"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description"
+                           class="form-label"></label>
+
+                    <textarea asp-for="Description"
+                              class="form-control"
+                              rows="4"
+                              placeholder="Describe the item"></textarea>
+
+                    <span asp-validation-for="Description"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Category"
+                           class="form-label"></label>
+
+                    <input asp-for="Category"
+                           class="form-control"
+                           placeholder="e.g. Books, Electronics, Notes" />
+
+                    <span asp-validation-for="Category"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Condition"
+                           class="form-label"></label>
+
+                    <select asp-for="Condition"
+                            class="form-select">
+
+                        <option value="">
+                            Select condition
+                        </option>
+
+                        <option value="New">
+                            New
+                        </option>
+
+                        <option value="Excellent">
+                            Excellent
+                        </option>
+
+                        <option value="Good">
+                            Good
+                        </option>
+
+                        <option value="Fair">
+                            Fair
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="Condition"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Image"
+                           class="form-label">
+                        Item Image
+                    </label>
+
+                    <input asp-for="Image"
+                           type="file"
+                           class="form-control"
+                           accept=".jpg,.jpeg,.png,.webp" />
+
+                    <div class="form-text">
+                        Allowed formats: JPG, JPEG, PNG, WEBP.
+                        Maximum size: 5 MB.
+                    </div>
+
+                    <span asp-validation-for="Image"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <div class="form-check mb-3">
+
+                    <input asp-for="IsAvailable"
+                           class="form-check-input" />
+
+                    <label asp-for="IsAvailable"
+                           class="form-check-label">
+                    </label>
+
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Create Item
+                </button>
+
+                <a asp-action="Index"
+                   class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial");
+    }
+}
