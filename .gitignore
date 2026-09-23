@@ -14,10 +14,6 @@ packages/
 *.nupkg
 *.snupkg
 
-# Uploaded images
-**/wwwroot/uploads/*
-!**/wwwroot/uploads/.gitkeep
-
 # Local database files
 *.mdf
 *.ldf
