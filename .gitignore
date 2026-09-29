@@ -31,7 +31,7 @@ packages/
 !**/wwwroot/uploads/.gitkeep
 
 # ==========================================
-# Local databases
+# Local database files
 # ==========================================
 *.mdf
 *.ldf
