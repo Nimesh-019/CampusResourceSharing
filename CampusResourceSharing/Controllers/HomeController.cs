@@ -1,4 +1,5 @@
 using CampusResourceSharing.Data;
+using CampusResourceSharing.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +7,6 @@ using System.Security.Claims;
 
 namespace CampusResourceSharing.Controllers
 {
-    [Authorize]
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,9 +20,18 @@ namespace CampusResourceSharing.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var items = await _context.Items
-                .Where(i => i.IsAvailable && i.OwnerId != userId)
+            var query = _context.Items
+                .Include(i => i.Owner)
+                .Where(i => i.IsAvailable && i.Status == ItemStatus.Approved);
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                query = query.Where(i => i.OwnerId != userId);
+            }
+
+            var items = await query
                 .OrderByDescending(i => i.CreatedAt)
+                .Take(6)
                 .ToListAsync();
 
             return View(items);

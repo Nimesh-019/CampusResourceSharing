@@ -6,11 +6,12 @@
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Incoming Requests</h2>
+        <div>
+            <h2 class="fw-bold mb-1">Incoming Requests</h2>
+            <p class="text-muted mb-0">Borrowing requests made by other students for your items.</p>
+        </div>
         <span class="badge bg-secondary fs-6">Total: @Model.Count()</span>
     </div>
-
-    <p class="text-muted">Requests made by other students for your shared items.</p>
 
     @if (TempData["Success"] != null)
     {
@@ -30,9 +31,9 @@
 
     @if (!Model.Any())
     {
-        <div class="alert alert-info shadow-sm">
+        <div class="alert alert-info shadow-sm py-4 text-center">
             <h5 class="alert-heading mb-1">No Incoming Requests</h5>
-            <p class="mb-0">You currently have no incoming requests for your items.</p>
+            <p class="mb-0 text-muted">You currently have no incoming requests for your shared items.</p>
         </div>
     }
     else
@@ -42,8 +43,8 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Item</th>
-                        <th>Requester</th>
-                        <th>Requested Duration</th>
+                        <th>Requester Info</th>
+                        <th>Duration</th>
                         <th>Requested On</th>
                         <th>Message</th>
                         <th>Status</th>
@@ -60,7 +61,20 @@
                                 <small class="text-muted">Category: @request.Item?.Category</small>
                             </td>
                             <td>
-                                @(request.Requester?.UserName ?? request.RequesterId)
+                                @if (request.Requester != null)
+                                {
+                                    <div class="fw-semibold">@request.Requester.FullName</div>
+                                    <small class="text-muted d-block">Dept: @request.Requester.Department</small>
+                                    <small class="text-muted d-block">Email: @request.Requester.Email</small>
+                                    @if (request.Status == "Accepted" && !string.IsNullOrEmpty(request.Requester.PhoneNumber))
+                                    {
+                                        <small class="text-primary d-block fw-semibold">Phone: @request.Requester.PhoneNumber</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@request.RequesterId</span>
+                                }
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark border">
@@ -81,7 +95,7 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted fs-7">No message</span>
+                                    <span class="text-muted small">No message</span>
                                 }
                             </td>
                             <td>
@@ -109,7 +123,7 @@
                                         <form asp-action="Accept" method="post" class="d-inline">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@request.Id" />
-                                            <button type="submit" class="btn btn-sm btn-success">
+                                            <button type="submit" class="btn btn-sm btn-success fw-semibold">
                                                 Accept
                                             </button>
                                         </form>

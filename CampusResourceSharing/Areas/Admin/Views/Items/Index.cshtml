@@ -1,0 +1,103 @@
+@model IEnumerable<Item>
+
+@{
+    ViewData["Title"] = "All Catalog Items";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="fw-bold mb-1">Resource Catalog (All Items)</h1>
+            <p class="text-muted mb-0">Overview of all items across Pending, Approved, and Rejected statuses</p>
+        </div>
+        <a asp-area="Admin" asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center py-4 shadow-sm">
+            <h5 class="mb-1">No items found in the database</h5>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Condition</th>
+                            <th>Owner</th>
+                            <th>Status</th>
+                            <th>Availability</th>
+                            <th>Submitted On</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong class="text-dark">@item.Name</strong>
+                                </td>
+                                <td><span class="badge bg-secondary-subtle text-dark border">@item.Category</span></td>
+                                <td>@(string.IsNullOrEmpty(item.Condition) ? "N/A" : item.Condition)</td>
+                                <td>
+                                    @(item.Owner?.FullName ?? "Unknown")
+                                    <br /><span class="text-muted small">@(item.Owner?.Email ?? "N/A")</span>
+                                </td>
+                                <td>
+                                    @if (item.Status == ItemStatus.Pending)
+                                    {
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    }
+                                    else if (item.Status == ItemStatus.Approved)
+                                    {
+                                        <span class="badge bg-success">Approved</span>
+                                    }
+                                    else if (item.Status == ItemStatus.Rejected)
+                                    {
+                                        <span class="badge bg-danger">Rejected</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.IsAvailable)
+                                    {
+                                        <span class="text-success fw-semibold">Available</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Unavailable</span>
+                                    }
+                                </td>
+                                <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">
+                                    @if (item.Status == ItemStatus.Pending)
+                                    {
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <form asp-area="Admin" asp-controller="Items" asp-action="Approve" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-success fw-bold">Approve</button>
+                                            </form>
+                                            <form asp-area="Admin" asp-controller="Items" asp-action="Reject" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger fw-bold ms-1">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">No action needed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -1,99 +1,185 @@
-﻿@model IEnumerable<CampusResourceSharing.Models.Item>
+@model IEnumerable<CampusResourceSharing.Models.Item>
 
 @{
     ViewData["Title"] = "Available Items";
+    var currentCategory = ViewBag.SelectedCategory as string ?? "All";
+    var currentCondition = ViewBag.SelectedCondition as string ?? "All";
+    var currentDepartment = ViewBag.SelectedDepartment as string ?? "All";
+    var currentAvailability = ViewBag.SelectedAvailability as string ?? "Available";
+    var searchTerm = ViewBag.SearchTerm as string;
 }
 
 <div class="container mt-4">
-
-    <h1>Available Items</h1>
-
-    <p class="text-muted">
-        Items shared by other students
-    </p>
-
-    <div class="row">
-
-        @foreach (var item in Model)
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="fw-bold mb-1">Available Items</h1>
+            <p class="text-muted mb-0">Browse resources shared by fellow students</p>
+        </div>
+        @if (User.Identity?.IsAuthenticated == true)
         {
-            <div class="col-md-4 mb-4">
-
-                <div class="card h-100 shadow-sm">
-
-                    @if (!string.IsNullOrEmpty(item.ImagePath))
-                    {
-                        <img src="@item.ImagePath"
-                             class="card-img-top"
-                             style="height:220px; object-fit:cover;"
-                             alt="@item.Name">
-                    }
-                    else
-                    {
-                        <div class="d-flex align-items-center justify-content-center bg-light"
-                             style="height:220px;">
-
-                            <span class="text-muted">
-                                No Image
-                            </span>
-
-                        </div>
-                    }
-
-                    <div class="card-body">
-
-                        <h5 class="card-title">
-                            @item.Name
-                        </h5>
-
-                        <p class="card-text">
-                            @item.Description
-                        </p>
-
-                        <p>
-                            <strong>Category:</strong>
-                            @item.Category
-                        </p>
-
-                        <p>
-                            <strong>Condition:</strong>
-                            @item.Condition
-                        </p>
-
-                        <span class="badge bg-success">
-                            Available
-                        </span>
-
-                    </div>
-
-                    <div class="card-footer">
-
-                        <a asp-action="Details"
-                           asp-route-id="@item.Id"
-                           class="btn btn-outline-primary">
-                            View Details
-                        </a>
-
-                        <a asp-controller="Request"
-                           asp-action="Create"
-                           asp-route-itemId="@item.Id"
-                           class="btn btn-primary">
-                            Request Item
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </div>
+            <a asp-action="Create" class="btn btn-primary fw-bold">
+                + Add Item
+            </a>
         }
-
     </div>
 
+    <!-- Search & Filter Card -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3 p-md-4">
+            <form method="get" asp-action="Index">
+                <div class="row g-3">
+                    <!-- Search Input -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-muted">Search Item</label>
+                        <input type="text" name="searchTerm" class="form-control" placeholder="Search by name or keyword..." value="@searchTerm" />
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small text-muted">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="All" selected="@(currentCategory == "All")">All Categories</option>
+                            @foreach (var cat in CampusResourceSharing.Models.ItemConstants.Categories)
+                            {
+                                <option value="@cat" selected="@(currentCategory == cat)">@cat</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Condition Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small text-muted">Condition</label>
+                        <select name="condition" class="form-select">
+                            <option value="All" selected="@(currentCondition == "All")">All Conditions</option>
+                            @foreach (var cond in CampusResourceSharing.Models.ItemConstants.Conditions)
+                            {
+                                <option value="@cond" selected="@(currentCondition == cond)">@cond</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Department Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small text-muted">Department</label>
+                        <select name="department" class="form-select">
+                            <option value="All" selected="@(currentDepartment == "All")">All Departments</option>
+                            @foreach (var dept in CampusResourceSharing.Models.DepartmentConstants.Departments)
+                            {
+                                <option value="@dept" selected="@(currentDepartment == dept)">@dept</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Availability Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small text-muted">Status</label>
+                        <select name="availability" class="form-select">
+                            <option value="Available" selected="@(currentAvailability == "Available")">Available Only</option>
+                            <option value="All" selected="@(currentAvailability == "All")">All Items</option>
+                            <option value="Unavailable" selected="@(currentAvailability == "Unavailable")">Unavailable</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        Search
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary px-3">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Items Grid -->
     @if (!Model.Any())
     {
-        <div class="alert alert-info">
-            No items from other students are currently available.
+        <div class="alert alert-info text-center py-4 shadow-sm">
+            <h5 class="mb-1">No items found</h5>
+            <p class="mb-0 text-muted">Try adjusting your search terms or clearing the filters.</p>
         </div>
     }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" class="card-img-top" style="height:220px; object-fit:cover;" alt="@item.Name" />
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center justify-content-center bg-light text-secondary" style="height:220px;">
+                                <span class="fw-medium">No Image</span>
+                            </div>
+                        }
 
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@item.Category</span>
+                                @if (!string.IsNullOrEmpty(item.Condition))
+                                {
+                                    <span class="badge bg-secondary-subtle text-dark border">@item.Condition</span>
+                                }
+                            </div>
+
+                            <h5 class="card-title fw-bold text-dark mb-1">@item.Name</h5>
+
+                            <p class="card-text text-muted small mb-3">
+                                @(string.IsNullOrEmpty(item.Description) ? "No description provided." : (item.Description.Length > 90 ? item.Description.Substring(0, 90) + "..." : item.Description))
+                            </p>
+
+                            @if (item.Owner != null)
+                            {
+                                <div class="text-muted small border-top pt-2">
+                                    <strong>Shared by:</strong> @item.Owner.FullName
+                                    @if (!string.IsNullOrEmpty(item.Owner.Department))
+                                    {
+                                        <br /><span class="text-muted">Branch: @item.Owner.Department</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-3 pt-0">
+                            @if (item.IsAvailable)
+                            {
+                                <span class="badge bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Unavailable</span>
+                            }
+
+                            <div class="d-flex gap-1">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm">
+                                    Details
+                                </a>
+                                @if (item.IsAvailable)
+                                {
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <a asp-controller="Request" asp-action="Create" asp-route-itemId="@item.Id" class="btn btn-primary btn-sm fw-semibold">
+                                            Request Item
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Url.Action("Create", "Request", new { itemId = item.Id })" class="btn btn-primary btn-sm">
+                                            Login to Request
+                                        </a>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>

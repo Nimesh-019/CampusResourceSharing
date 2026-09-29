@@ -1,130 +1,114 @@
-﻿@model IEnumerable<CampusResourceSharing.Models.Item>
-
-@using System.Security.Claims
+@model IEnumerable<CampusResourceSharing.Models.Item>
 
 @{
     ViewData["Title"] = "Home";
-    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
 <div class="container mt-4">
-
-    <div class="text-center mb-5">
-        <h1 class="display-5">
-            Campus Resource Sharing
-        </h1>
-
-        <p class="lead text-muted">
-            Discover useful resources shared by students.
+    <!-- Hero Section -->
+    <div class="p-4 p-md-5 mb-4 rounded-3 bg-white shadow-sm text-center">
+        <h1 class="display-5 fw-bold text-primary mb-3">Campus Resource Sharing</h1>
+        <p class="lead text-secondary mx-auto mb-4" style="max-width: 650px;">
+            Discover useful resources shared by students across departments. Share what you don't use, and borrow what you need.
         </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Item" asp-action="Create" class="btn btn-primary btn-lg px-4 fw-bold">
+                    + Add Item
+                </a>
+            }
+            else
+            {
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg px-4 fw-bold">
+                    Register to Start
+                </a>
+            }
+            <a asp-controller="Item" asp-action="Index" class="btn btn-outline-primary btn-lg px-4 fw-semibold">
+                Browse Available Items
+            </a>
+        </div>
     </div>
 
-
-    <h2 class="mb-4">
-        Available Items
-    </h2>
-
-
-    <div class="row">
-
-        @foreach (var item in Model)
-        {
-            <div class="col-md-4 mb-4">
-
-                <div class="card h-100 shadow-sm">
-
-                    @if (!string.IsNullOrEmpty(item.ImagePath))
-                    {
-                        <img src="@item.ImagePath"
-                             class="card-img-top"
-                             style="height:220px; object-fit:cover;"
-                             alt="@item.Name">
-                    }
-                    else
-                    {
-                        <div class="d-flex align-items-center justify-content-center bg-light"
-                             style="height:220px;">
-
-                            <span class="text-muted">
-                                No Image
-                            </span>
-
-                        </div>
-                    }
-
-
-                    <div class="card-body">
-
-                        <h5 class="card-title">
-                            @item.Name
-                        </h5>
-
-                        <p class="card-text">
-                            @item.Description
-                        </p>
-
-                        <p>
-                            <strong>Category:</strong>
-                            @item.Category
-                        </p>
-
-                        <p>
-                            <strong>Condition:</strong>
-                            @item.Condition
-                        </p>
-
-                        <span class="badge bg-success">
-                            Available
-                        </span>
-
-                    </div>
-
-
-                    <div class="card-footer">
-
-                        <a asp-controller="Item"
-                           asp-action="Details"
-                           asp-route-id="@item.Id"
-                           class="btn btn-outline-primary">
-                            View Details
-                        </a>
-
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <a asp-controller="Request"
-                               asp-action="Create"
-                               asp-route-itemId="@item.Id"
-                               class="btn btn-primary ms-2">
-                                Request Item
-                            </a>
-                        }
-                        else
-                        {
-                            <a asp-area="Identity"
-                               asp-page="/Account/Login"
-                               asp-route-returnUrl="@Url.Action("Index", "Home")"
-                               class="btn btn-primary ms-2">
-                                Login to Request
-                            </a>
-                        }
-
-                        
-
-                    </div>
-
-                </div>
-
-            </div>
-        }
-
+    <!-- Recent Items Section -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold mb-0">Recent Available Items</h3>
+        <a asp-controller="Item" asp-action="Index" class="text-decoration-none fw-semibold">
+            View All &rarr;
+        </a>
     </div>
-
 
     @if (!Model.Any())
     {
-        <div class="alert alert-info text-center">
-            No items are currently available.
+        <div class="alert alert-info text-center py-4 shadow-sm">
+            <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
+            <h5 class="mb-1">No items available right now</h5>
+            <p class="mb-0 text-muted">Be the first to share an item with your fellow students!</p>
         </div>
     }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" class="card-img-top" style="height:220px; object-fit:cover;" alt="@item.Name" />
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center justify-content-center bg-light text-secondary" style="height:220px;">
+                                <span class="fw-medium">No Image</span>
+                            </div>
+                        }
 
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@item.Category</span>
+                                @if (!string.IsNullOrEmpty(item.Condition))
+                                {
+                                    <span class="badge bg-secondary-subtle text-dark border">@item.Condition</span>
+                                }
+                            </div>
+
+                            <h5 class="card-title fw-bold text-dark">@item.Name</h5>
+
+                            <p class="card-text text-muted small mb-3">
+                                @(string.IsNullOrEmpty(item.Description) ? "No description provided." : (item.Description.Length > 90 ? item.Description.Substring(0, 90) + "..." : item.Description))
+                            </p>
+
+                            @if (item.Owner != null)
+                            {
+                                <div class="text-muted small">
+                                    <i class="bi bi-person"></i> <strong>Shared by:</strong> @item.Owner.FullName
+                                    @if (!string.IsNullOrEmpty(item.Owner.Department))
+                                    {
+                                        <span>(@item.Owner.Department)</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-3 pt-0">
+                            <span class="badge bg-success">Available</span>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a asp-controller="Request" asp-action="Create" asp-route-itemId="@item.Id" class="btn btn-primary btn-sm fw-semibold">
+                                    Request Item
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Url.Action("Create", "Request", new { itemId = item.Id })" class="btn btn-outline-primary btn-sm">
+                                    Login to Request
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>

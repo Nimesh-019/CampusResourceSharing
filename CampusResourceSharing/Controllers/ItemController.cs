@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace CampusResourceSharing.Controllers
 {
-    //[Authorize]
+    [Authorize]
     public class ItemController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -33,28 +33,73 @@ namespace CampusResourceSharing.Controllers
         }
 
         // GET: Item
-        // Shows items shared by other students
-        public async Task<IActionResult> Index()
+        // Shows available items shared by other students with search and filter
+        [AllowAnonymous]
+        public async Task<IActionResult> Index(
+            string? searchTerm,
+            string? category,
+            string? condition,
+            string? department,
+            string? availability)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Console.WriteLine("Logged User ID: " + userId);
+            var query = _context.Items
+                .Include(i => i.Owner)
+                .Where(i => i.Status == ItemStatus.Approved)
+                .AsQueryable();
 
-            if (userId == null)
+            // Requirement 9: Exclude logged-in student's own items from available list to request
+            if (!string.IsNullOrEmpty(userId))
             {
-                return Unauthorized();
+                query = query.Where(i => i.OwnerId != userId);
             }
 
-            var items = await _context.Items
-                .Where(i => i.IsAvailable && i.OwnerId != userId)
+            // Search by Item Name or Description
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                query = query.Where(i =>
+                    i.Name.Contains(searchTerm) ||
+                    (i.Description != null && i.Description.Contains(searchTerm)));
+            }
+
+            // Filter by Category
+            if (!string.IsNullOrWhiteSpace(category) && category != "All")
+            {
+                query = query.Where(i => i.Category == category);
+            }
+
+            // Filter by Condition
+            if (!string.IsNullOrWhiteSpace(condition) && condition != "All")
+            {
+                query = query.Where(i => i.Condition == condition);
+            }
+
+            // Filter by Owner's Department
+            if (!string.IsNullOrWhiteSpace(department) && department != "All")
+            {
+                query = query.Where(i => i.Owner != null && i.Owner.Department == department);
+            }
+
+            // Filter by Availability (default to Available)
+            if (string.IsNullOrWhiteSpace(availability) || availability == "Available")
+            {
+                query = query.Where(i => i.IsAvailable);
+            }
+            else if (availability == "Unavailable")
+            {
+                query = query.Where(i => !i.IsAvailable);
+            }
+
+            var items = await query
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
-            foreach (var item in items)
-            {
-                Console.WriteLine(
-                    $"Item: {item.Name}, OwnerId: {item.OwnerId}");
-            }
+            ViewBag.SearchTerm = searchTerm;
+            ViewBag.SelectedCategory = category ?? "All";
+            ViewBag.SelectedCondition = condition ?? "All";
+            ViewBag.SelectedDepartment = department ?? "All";
+            ViewBag.SelectedAvailability = availability ?? "Available";
 
             return View(items);
         }
@@ -63,8 +108,7 @@ namespace CampusResourceSharing.Controllers
         // Shows items shared by logged-in student
         public async Task<IActionResult> MyItems()
         {
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -80,6 +124,7 @@ namespace CampusResourceSharing.Controllers
         }
 
         // GET: Item/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -88,9 +133,19 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
+                .Include(i => i.Owner)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
             if (item == null)
+            {
+                return NotFound();
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var isAdmin = User.IsInRole("Admin");
+
+            // Only allow viewing non-approved items if current user is owner or admin
+            if (item.Status != ItemStatus.Approved && item.OwnerId != currentUserId && !isAdmin)
             {
                 return NotFound();
             }
@@ -107,18 +162,15 @@ namespace CampusResourceSharing.Controllers
         // POST: Item/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            ItemCreateViewModel model)
+        public async Task<IActionResult> Create(ItemCreateViewModel model)
         {
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (userId == null)
+            if (string.IsNullOrEmpty(userId) || !await _context.Users.AnyAsync(u => u.Id == userId))
             {
                 return Unauthorized();
             }
 
-            // Validate image
             if (model.Image != null)
             {
                 if (!ValidateImage(model.Image))
@@ -134,7 +186,6 @@ namespace CampusResourceSharing.Controllers
 
             string? imagePath = null;
 
-            // Save image
             if (model.Image != null)
             {
                 imagePath = await SaveImageAsync(model.Image);
@@ -148,14 +199,15 @@ namespace CampusResourceSharing.Controllers
                 Condition = model.Condition,
                 ImagePath = imagePath,
                 OwnerId = userId,
-                IsAvailable = true,
+                IsAvailable = model.IsAvailable,
+                Status = ItemStatus.Pending,
                 CreatedAt = DateTime.Now
             };
 
             _context.Items.Add(item);
-
             await _context.SaveChangesAsync();
 
+            TempData["Success"] = "Item added successfully. It is now pending administrator approval.";
             return RedirectToAction(nameof(MyItems));
         }
 
@@ -167,8 +219,7 @@ namespace CampusResourceSharing.Controllers
                 return NotFound();
             }
 
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -176,9 +227,7 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i =>
-                    i.Id == id &&
-                    i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
 
             if (item == null)
             {
@@ -202,17 +251,14 @@ namespace CampusResourceSharing.Controllers
         // POST: Item/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(
-            int id,
-            ItemEditViewModel model)
+        public async Task<IActionResult> Edit(int id, ItemEditViewModel model)
         {
             if (id != model.Id)
             {
                 return NotFound();
             }
 
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -220,54 +266,43 @@ namespace CampusResourceSharing.Controllers
             }
 
             var existingItem = await _context.Items
-                .FirstOrDefaultAsync(i =>
-                    i.Id == id &&
-                    i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
 
             if (existingItem == null)
             {
                 return NotFound();
             }
 
-            // Validate new image
             if (model.Image != null)
             {
                 if (!ValidateImage(model.Image))
                 {
-                    model.ExistingImagePath =
-                        existingItem.ImagePath;
-
+                    model.ExistingImagePath = existingItem.ImagePath;
                     return View(model);
                 }
             }
 
             if (!ModelState.IsValid)
             {
-                model.ExistingImagePath =
-                    existingItem.ImagePath;
-
+                model.ExistingImagePath = existingItem.ImagePath;
                 return View(model);
             }
 
-            // Update normal fields
             existingItem.Name = model.Name;
             existingItem.Description = model.Description;
             existingItem.Category = model.Category;
             existingItem.Condition = model.Condition;
             existingItem.IsAvailable = model.IsAvailable;
+            existingItem.Status = ItemStatus.Pending; // Re-edited item must be approved again
 
-            // If a new image was selected
             if (model.Image != null)
             {
-                // Delete old image
                 DeleteImage(existingItem.ImagePath);
-
-                // Save new image
-                existingItem.ImagePath =
-                    await SaveImageAsync(model.Image);
+                existingItem.ImagePath = await SaveImageAsync(model.Image);
             }
 
             await _context.SaveChangesAsync();
+            TempData["Success"] = "Item updated successfully and resubmitted for admin approval.";
 
             return RedirectToAction(nameof(MyItems));
         }
@@ -280,8 +315,7 @@ namespace CampusResourceSharing.Controllers
                 return NotFound();
             }
 
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -289,9 +323,7 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i =>
-                    i.Id == id &&
-                    i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
 
             if (item == null)
             {
@@ -306,8 +338,7 @@ namespace CampusResourceSharing.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -315,21 +346,18 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i =>
-                    i.Id == id &&
-                    i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
 
             if (item == null)
             {
                 return NotFound();
             }
 
-            // Delete image from wwwroot
             DeleteImage(item.ImagePath);
-
             _context.Items.Remove(item);
 
             await _context.SaveChangesAsync();
+            TempData["Success"] = "Item removed successfully.";
 
             return RedirectToAction(nameof(MyItems));
         }
@@ -342,53 +370,31 @@ namespace CampusResourceSharing.Controllers
         {
             if (image.Length > MaxImageSize)
             {
-                ModelState.AddModelError(
-                    "Image",
-                    "Image size cannot exceed 5 MB.");
-
+                ModelState.AddModelError("Image", "Image size cannot exceed 5 MB.");
                 return false;
             }
 
-            var extension = Path
-                .GetExtension(image.FileName)
-                .ToLowerInvariant();
+            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
 
             if (!_allowedExtensions.Contains(extension))
             {
-                ModelState.AddModelError(
-                    "Image",
-                    "Only JPG, JPEG, PNG, and WEBP images are allowed.");
-
+                ModelState.AddModelError("Image", "Only JPG, JPEG, PNG, and WEBP images are allowed.");
                 return false;
             }
 
             return true;
         }
 
-        private async Task<string> SaveImageAsync(
-            IFormFile image)
+        private async Task<string> SaveImageAsync(IFormFile image)
         {
-            var uploadsFolder = Path.Combine(
-                _environment.WebRootPath,
-                "uploads",
-                "items");
-
+            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "items");
             Directory.CreateDirectory(uploadsFolder);
 
-            var extension = Path
-                .GetExtension(image.FileName)
-                .ToLowerInvariant();
+            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsFolder, fileName);
 
-            var fileName =
-                $"{Guid.NewGuid()}{extension}";
-
-            var filePath = Path.Combine(
-                uploadsFolder,
-                fileName);
-
-            using (var stream = new FileStream(
-                filePath,
-                FileMode.Create))
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await image.CopyToAsync(stream);
             }
@@ -410,11 +416,7 @@ namespace CampusResourceSharing.Controllers
                 return;
             }
 
-            var filePath = Path.Combine(
-                _environment.WebRootPath,
-                "uploads",
-                "items",
-                fileName);
+            var filePath = Path.Combine(_environment.WebRootPath, "uploads", "items", fileName);
 
             if (System.IO.File.Exists(filePath))
             {

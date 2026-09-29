@@ -34,6 +34,12 @@ namespace CampusResourceSharing.Controllers
                 );
             }
 
+            if (item.Status != ItemStatus.Approved)
+            {
+                TempData["Error"] = "This item is not approved for sharing.";
+                return RedirectToAction("Index", "Item");
+            }
+
             var currentUserId = User.FindFirstValue(
                 ClaimTypes.NameIdentifier);
 
@@ -71,6 +77,12 @@ namespace CampusResourceSharing.Controllers
             if (item == null)
             {
                 return NotFound();
+            }
+
+            if (item.Status != ItemStatus.Approved)
+            {
+                TempData["Error"] = "This item is not approved for sharing.";
+                return RedirectToAction("Index", "Item");
             }
 
             ViewBag.Item = item;
@@ -228,7 +240,8 @@ namespace CampusResourceSharing.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var requests = await _context.Requests
-                .Include(r => r.Item)
+                .Include(r => r.Item!)
+                    .ThenInclude(i => i.Owner)
                 .Where(r => r.RequesterId == currentUserId)
                 .OrderByDescending(r => r.RequestedAt)
                 .ToListAsync();

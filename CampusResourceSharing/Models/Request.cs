@@ -21,7 +21,7 @@ namespace CampusResourceSharing.Models
         public string RequesterId { get; set; } = string.Empty;
 
         [ValidateNever]
-        public IdentityUser? Requester { get; set; }
+        public ApplicationUser? Requester { get; set; }
 
         // Optional message from requester
         [StringLength(500)]

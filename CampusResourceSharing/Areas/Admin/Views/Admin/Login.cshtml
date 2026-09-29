@@ -1,0 +1,47 @@
+@model AdminLoginViewModel
+
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<div class="row justify-content-center align-items-center mt-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 mb-2 fw-bold text-uppercase">
+                        Administrator Access
+                    </span>
+                    <h2 class="fw-bold text-dark mt-2 mb-1">Admin Login</h2>
+                    <p class="text-muted small">Enter your administrator credentials to continue</p>
+                </div>
+
+                <form asp-area="Admin" asp-controller="Admin" asp-action="Login" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold small text-muted"></label>
+                        <input asp-for="Email" class="form-control form-control-lg" placeholder="admin@gmail.com" autocomplete="username" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label fw-semibold small text-muted"></label>
+                        <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" autocomplete="current-password" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg fw-bold py-2">
+                            Log In as Admin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

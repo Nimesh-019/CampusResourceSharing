@@ -5,167 +5,89 @@
 }
 
 <div class="container mt-4">
-
-    <h1>Edit Item</h1>
-
-    <div class="row">
-        <div class="col-md-7">
-
-            <form asp-action="Edit"
-                  method="post"
-                  enctype="multipart/form-data">
-
-                <input type="hidden"
-                       asp-for="Id" />
-
-                <div asp-validation-summary="All"
-                     class="text-danger mb-3">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h3 class="mb-0 fw-bold">Edit Item</h3>
+                    <small>Update item information</small>
                 </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-                <div class="mb-3">
-                    <label asp-for="Name"
-                           class="form-label"></label>
-
-                    <input asp-for="Name"
-                           class="form-control" />
-
-                    <span asp-validation-for="Name"
-                          class="text-danger">
-                    </span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Description"
-                           class="form-label"></label>
-
-                    <textarea asp-for="Description"
-                              class="form-control"
-                              rows="4"></textarea>
-
-                    <span asp-validation-for="Description"
-                          class="text-danger">
-                    </span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Category"
-                           class="form-label"></label>
-
-                    <input asp-for="Category"
-                           class="form-control" />
-
-                    <span asp-validation-for="Category"
-                          class="text-danger">
-                    </span>
-                </div>
-
-                <div class="mb-3">
-                    <label asp-for="Condition"
-                           class="form-label"></label>
-
-                    <select asp-for="Condition"
-                            class="form-select">
-
-                        <option value="">
-                            Select condition
-                        </option>
-
-                        <option value="New">
-                            New
-                        </option>
-
-                        <option value="Excellent">
-                            Excellent
-                        </option>
-
-                        <option value="Good">
-                            Good
-                        </option>
-
-                        <option value="Fair">
-                            Fair
-                        </option>
-
-                    </select>
-
-                    <span asp-validation-for="Condition"
-                          class="text-danger">
-                    </span>
-                </div>
-
-                @if (!string.IsNullOrEmpty(Model.ExistingImagePath))
-                {
-                    <div class="mb-3">
-
-                        <label class="form-label">
-                            Current Image
-                        </label>
-
-                        <div>
-                            <img src="@Model.ExistingImagePath"
-                                 alt="@Model.Name"
-                                 class="img-thumbnail"
-                                 style="max-width: 250px; max-height: 200px; object-fit: cover;" />
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold"></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
                         </div>
 
-                    </div>
-                }
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Category" class="form-label fw-semibold"></label>
+                                <select asp-for="Category" class="form-select">
+                                    <option value="">-- Select Category --</option>
+                                    @foreach (var cat in CampusResourceSharing.Models.ItemConstants.Categories)
+                                    {
+                                        <option value="@cat">@cat</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
 
-                <div class="mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Condition" class="form-label fw-semibold"></label>
+                                <select asp-for="Condition" class="form-select">
+                                    <option value="">-- Select Condition --</option>
+                                    @foreach (var cond in CampusResourceSharing.Models.ItemConstants.Conditions)
+                                    {
+                                        <option value="@cond">@cond</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="Condition" class="text-danger"></span>
+                            </div>
+                        </div>
 
-                    <label asp-for="Image"
-                           class="form-label">
-                        Change Image
-                    </label>
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-semibold"></label>
+                            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
 
-                    <input asp-for="Image"
-                           type="file"
-                           class="form-control"
-                           accept=".jpg,.jpeg,.png,.webp" />
+                        @if (!string.IsNullOrEmpty(Model.ExistingImagePath))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Current Image</label>
+                                <div>
+                                    <img src="@Model.ExistingImagePath" alt="@Model.Name" class="img-thumbnail" style="max-width: 200px; max-height: 160px; object-fit: cover;" />
+                                </div>
+                            </div>
+                        }
 
-                    <div class="form-text">
-                        Leave empty to keep the current image.
-                        Allowed formats: JPG, JPEG, PNG, WEBP.
-                        Maximum size: 5 MB.
-                    </div>
+                        <div class="mb-3">
+                            <label asp-for="Image" class="form-label fw-semibold">Change Image</label>
+                            <input asp-for="Image" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                            <div class="form-text">Leave empty to keep current image. Allowed: JPG, JPEG, PNG, WEBP. Max 5 MB.</div>
+                            <span asp-validation-for="Image" class="text-danger"></span>
+                        </div>
 
-                    <span asp-validation-for="Image"
-                          class="text-danger">
-                    </span>
+                        <div class="form-check mb-4">
+                            <input asp-for="IsAvailable" class="form-check-input" />
+                            <label asp-for="IsAvailable" class="form-check-label fw-semibold"></label>
+                        </div>
 
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary fw-bold px-4">Save Changes</button>
+                            <a asp-action="MyItems" class="btn btn-secondary px-3">Cancel</a>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="form-check mb-3">
-
-                    <input asp-for="IsAvailable"
-                           class="form-check-input" />
-
-                    <label asp-for="IsAvailable"
-                           class="form-check-label">
-                    </label>
-
-                </div>
-
-                <button type="submit"
-                        class="btn btn-primary">
-                    Save Changes
-                </button>
-
-                <a asp-action="MyItems"
-                   class="btn btn-secondary">
-                    Cancel
-                </a>
-
-            </form>
-
+            </div>
         </div>
     </div>
-
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync(
-            "_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }

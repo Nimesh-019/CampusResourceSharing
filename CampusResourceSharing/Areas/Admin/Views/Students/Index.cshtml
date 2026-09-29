@@ -1,0 +1,78 @@
+@model IEnumerable<ApplicationUser>
+
+@{
+    ViewData["Title"] = "Registered Students";
+    var itemCounts = ViewBag.StudentItemCounts as Dictionary<string, int> ?? new Dictionary<string, int>();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="fw-bold mb-1">Registered Students</h1>
+            <p class="text-muted mb-0">View student account details and their shared resources</p>
+        </div>
+        <a asp-area="Admin" asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info text-center py-4 shadow-sm">
+            <h5 class="mb-1">No registered students found</h5>
+            <p class="mb-0 text-muted">When students register, they will appear in this list.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Department / Branch</th>
+                            <th>Address</th>
+                            <th class="text-center">Shared Items</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model)
+                        {
+                            var count = itemCounts.ContainsKey(student.Id) ? itemCounts[student.Id] : 0;
+                            <tr>
+                                <td>
+                                    <strong class="text-dark">@student.FullName</strong>
+                                </td>
+                                <td>@student.Email</td>
+                                <td>@(string.IsNullOrEmpty(student.PhoneNumber) ? "N/A" : student.PhoneNumber)</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-dark border">
+                                        @(string.IsNullOrEmpty(student.Department) ? "N/A" : student.Department)
+                                    </span>
+                                </td>
+                                <td>@(string.IsNullOrEmpty(student.Address) ? "N/A" : student.Address)</td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary rounded-pill px-3">@count</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-area="Admin" asp-controller="Students" asp-action="Details" asp-route-id="@student.Id" class="btn btn-outline-secondary">
+                                            View Details
+                                        </a>
+                                        <a asp-area="Admin" asp-controller="Students" asp-action="Items" asp-route-id="@student.Id" class="btn btn-outline-primary">
+                                            View Items (@count)
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

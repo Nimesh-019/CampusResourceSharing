@@ -1,104 +1,88 @@
-﻿@model CampusResourceSharing.Models.Item
+@model CampusResourceSharing.Models.Item
 
 @{
     ViewData["Title"] = "Item Details";
 }
 
 <div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            @if (!string.IsNullOrEmpty(Model.ImagePath))
+                            {
+                                <img src="@Model.ImagePath" class="img-fluid rounded border shadow-sm w-100" style="max-height: 380px; object-fit: cover;" alt="@Model.Name" />
+                            }
+                            else
+                            {
+                                <div class="bg-light rounded border d-flex align-items-center justify-content-center text-muted" style="height:320px;">
+                                    <span class="fs-5 fw-medium">No Image Available</span>
+                                </div>
+                            }
+                        </div>
 
-    <div class="row">
+                        <div class="col-md-6 d-flex flex-column">
+                            <div class="d-flex gap-2 mb-2">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@Model.Category</span>
+                                @if (!string.IsNullOrEmpty(Model.Condition))
+                                {
+                                    <span class="badge bg-secondary-subtle text-dark border">@Model.Condition</span>
+                                }
+                                @if (Model.IsAvailable)
+                                {
+                                    <span class="badge bg-success ms-auto">Available</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger ms-auto">Unavailable</span>
+                                }
+                            </div>
 
-        <div class="col-md-6">
+                            <h2 class="fw-bold text-dark mb-2">@Model.Name</h2>
 
-            @if (!string.IsNullOrEmpty(Model.ImagePath))
-            {
-                <img src="@Model.ImagePath"
-                     class="img-fluid rounded shadow"
-                     alt="@Model.Name" />
-            }
-            else
-            {
-                <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                     style="height:400px;">
+                            <div class="mb-3">
+                                <h6 class="fw-semibold text-muted mb-1">Description</h6>
+                                <p class="text-dark">@(string.IsNullOrEmpty(Model.Description) ? "No description provided." : Model.Description)</p>
+                            </div>
 
-                    <span class="text-muted">
-                        No Image Available
-                    </span>
+                            @if (Model.Owner != null)
+                            {
+                                <div class="p-3 bg-light rounded border mb-4">
+                                    <h6 class="fw-semibold mb-1 text-primary">Sharer Details</h6>
+                                    <div><strong>Name:</strong> @Model.Owner.FullName</div>
+                                    @if (!string.IsNullOrEmpty(Model.Owner.Department))
+                                    {
+                                        <div><strong>Department:</strong> @Model.Owner.Department</div>
+                                    }
+                                </div>
+                            }
 
+                            <div class="mt-auto d-flex gap-2">
+                                @if (Model.IsAvailable && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value != Model.OwnerId)
+                                {
+                                    <a asp-controller="Request" asp-action="Create" asp-route-itemId="@Model.Id" class="btn btn-primary fw-bold px-4">
+                                        Request Item
+                                    </a>
+                                }
+                                @if (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.OwnerId)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning fw-semibold">
+                                        Edit
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger fw-semibold">
+                                        Delete
+                                    </a>
+                                }
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    Back to Items
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            }
-
-        </div>
-
-        <div class="col-md-6">
-
-            <h1>@Model.Name</h1>
-
-            <hr />
-
-            <p>
-                <strong>Category:</strong>
-                @Model.Category
-            </p>
-
-            <p>
-                <strong>Condition:</strong>
-                @Model.Condition
-            </p>
-
-            <p>
-                <strong>Description:</strong>
-            </p>
-
-            <p>
-                @Model.Description
-            </p>
-
-            <p>
-                <strong>Status:</strong>
-
-                @if (Model.IsAvailable)
-                {
-                    <span class="badge bg-success">
-                        Available
-                    </span>
-                }
-                else
-                {
-                    <span class="badge bg-danger">
-                        Not Available
-                    </span>
-                }
-            </p>
-
-            <p class="text-muted">
-                Added on
-                @Model.CreatedAt.ToString("dd MMM yyyy")
-            </p>
-
-            <div class="mt-4">
-
-                <a asp-action="Edit"
-                   asp-route-id="@Model.Id"
-                   class="btn btn-warning">
-                    Edit
-                </a>
-
-                <a asp-action="Delete"
-                   asp-route-id="@Model.Id"
-                   class="btn btn-danger">
-                    Delete
-                </a>
-
-                <a asp-action="Index"
-                   class="btn btn-secondary">
-                    Back
-                </a>
-
             </div>
-
         </div>
-
     </div>
-
 </div>

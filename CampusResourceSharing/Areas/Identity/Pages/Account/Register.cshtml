@@ -1,0 +1,85 @@
+@page
+@model CampusResourceSharing.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Student Registration";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h3 class="mb-0 fw-bold">Student Registration</h3>
+                    <small>Join Campus Resource Sharing to share and request items</small>
+                </div>
+                <div class="card-body p-4">
+                    <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.FullName" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.FullName" class="form-control" placeholder="Enter your full name" />
+                            <span asp-validation-for="Input.FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Email" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.Email" class="form-control" placeholder="student@college.edu" />
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.PhoneNumber" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="e.g. 9876543210" />
+                            <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Department" class="form-label fw-semibold"></label>
+                            <select asp-for="Input.Department" class="form-select">
+                                <option value="">-- Select Branch / Department --</option>
+                                @foreach (var dept in CampusResourceSharing.Models.DepartmentConstants.Departments)
+                                {
+                                    <option value="@dept">@dept</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Input.Department" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Address" class="form-label fw-semibold"></label>
+                            <textarea asp-for="Input.Address" class="form-control" rows="2" placeholder="Hostel/Room No. or Campus Address"></textarea>
+                            <span asp-validation-for="Input.Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.Password" class="form-label fw-semibold"></label>
+                                <input asp-for="Input.Password" class="form-control" placeholder="Password" />
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold"></label>
+                                <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="Confirm password" />
+                                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-3">
+                            <button id="registerSubmit" type="submit" class="btn btn-primary btn-lg fw-bold">Register</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center py-3 bg-light">
+                    <span>Already have an account? </span>
+                    <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none fw-semibold">Login here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

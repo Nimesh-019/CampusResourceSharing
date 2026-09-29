@@ -1,44 +1,74 @@
+# ==========================================
 # Visual Studio
+# ==========================================
 .vs/
 .vscode/
 *.user
 *.suo
 *.userosscache
+*.userprefs
 
+# ==========================================
 # Build output
+# ==========================================
 **/bin/
 **/obj/
 
+# ==========================================
 # NuGet
+# ==========================================
 packages/
 *.nupkg
 *.snupkg
 
-# Uploaded images
+# ==========================================
+# Uploaded files
+# ==========================================
+# Ignore all uploaded images/files
 **/wwwroot/uploads/*
+
+# Keep the uploads directory in Git
 !**/wwwroot/uploads/.gitkeep
 
-# Local database files
+# ==========================================
+# Local databases
+# ==========================================
 *.mdf
 *.ldf
 *.db
 *.sqlite
 *.sqlite3
 
-# Environment / secrets
+# ==========================================
+# Environment variables / secrets
+# ==========================================
 .env
 .env.*
 !.env.example
 
+# ==========================================
 # Logs
+# ==========================================
 *.log
 logs/
 
-# OS files
+# ==========================================
+# Operating system files
+# ==========================================
 .DS_Store
 Thumbs.db
+desktop.ini
 
+# ==========================================
 # Temporary files
+# ==========================================
 *.tmp
 *.temp
 *.bak
+*.swp
+*~
+
+# ==========================================
+# ASP.NET generated files
+# ==========================================
+wwwroot/lib/
