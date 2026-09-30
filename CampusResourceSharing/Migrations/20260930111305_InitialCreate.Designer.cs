@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CampusResourceSharing.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260929162823_AddItemApprovalStatus")]
-    partial class AddItemApprovalStatus
+    [Migration("20260930111305_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

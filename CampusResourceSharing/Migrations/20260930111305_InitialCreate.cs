@@ -172,6 +172,7 @@ namespace CampusResourceSharing.Migrations
                     OwnerId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ImagePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsAvailable = table.Column<bool>(type: "bit", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>

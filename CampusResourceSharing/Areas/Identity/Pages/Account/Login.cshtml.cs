@@ -10,11 +10,16 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
     public class LoginModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -28,6 +33,10 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
 
         public class InputModel
         {
+            [Required]
+            [Display(Name = "Role")]
+            public string Role { get; set; } = "Student";
+
             [Required(ErrorMessage = "Email Address is required.")]
             [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
             [Display(Name = "Email Address")]
@@ -62,16 +71,67 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, isPersistent: false, lockoutOnFailure: false);
-                if (result.Succeeded)
+                if (Input.Role == "Admin")
                 {
-                    _logger.LogInformation("User logged in.");
-                    return LocalRedirect(returnUrl);
+                    var user = await _userManager.FindByEmailAsync(Input.Email);
+                    if (user == null)
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email and password.");
+                        return Page();
+                    }
+
+                    var isPasswordValid = await _userManager.CheckPasswordAsync(user, Input.Password);
+                    if (!isPasswordValid)
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email and password.");
+                        return Page();
+                    }
+
+                    var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+                    if (!isAdmin)
+                    {
+                        ModelState.AddModelError(string.Empty, "You do not have permission to log in as Admin.");
+                        return Page();
+                    }
+
+                    var result = await _signInManager.PasswordSignInAsync(
+                        user.UserName!,
+                        Input.Password,
+                        isPersistent: false,
+                        lockoutOnFailure: false);
+
+                    if (result.Succeeded)
+                    {
+                        _logger.LogInformation("Admin user logged in.");
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return LocalRedirect(returnUrl);
+                        }
+                        return LocalRedirect("~/Admin");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email and password.");
+                        return Page();
+                    }
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email and password.");
-                    return Page();
+                    var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, isPersistent: false, lockoutOnFailure: false);
+                    if (result.Succeeded)
+                    {
+                        _logger.LogInformation("User logged in.");
+                        if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            returnUrl = Url.Content("~/");
+                        }
+                        return LocalRedirect(returnUrl);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt. Please check your email and password.");
+                        return Page();
+                    }
                 }
             }
 

@@ -64,7 +64,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            return View();
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         }
 
         // POST: /Admin/Login
@@ -115,7 +115,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction(nameof(Login));
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         }
     }
 }

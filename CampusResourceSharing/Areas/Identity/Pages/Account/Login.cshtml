@@ -17,6 +17,25 @@
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
 
                         <div class="mb-3">
+                            <label class="form-label fw-semibold d-block mb-2">Login As</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="Input.Role" value="Student" id="roleStudent" checked />
+                                    <label class="form-check-label fw-medium" for="roleStudent">
+                                        Student
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="Input.Role" value="Admin" id="roleAdmin" />
+                                    <label class="form-check-label fw-medium" for="roleAdmin">
+                                        Admin
+                                    </label>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Input.Role" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
                             <label asp-for="Input.Email" class="form-label fw-semibold"></label>
                             <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="student@college.edu" />
                             <span asp-validation-for="Input.Email" class="text-danger"></span>
