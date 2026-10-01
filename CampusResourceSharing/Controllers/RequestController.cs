@@ -176,7 +176,7 @@ namespace CampusResourceSharing.Controllers
         // POST: Request/Accept/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Accept(int id)
+        public async Task<IActionResult> Accept(int id, string? returnUrl = null)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -201,20 +201,29 @@ namespace CampusResourceSharing.Controllers
             if (isOverlapping)
             {
                 TempData["Error"] = "Item is not available for that duration because another request is already accepted.";
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
                 return RedirectToAction(nameof(IncomingRequests));
             }
 
             request.Status = "Accepted";
+            request.RespondedAt = DateTime.Now;
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Request accepted successfully.";
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
             return RedirectToAction(nameof(IncomingRequests));
         }
 
         // POST: Request/Reject/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Reject(int id)
+        public async Task<IActionResult> Reject(int id, string? returnUrl = null)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -228,9 +237,14 @@ namespace CampusResourceSharing.Controllers
             }
 
             request.Status = "Rejected";
+            request.RespondedAt = DateTime.Now;
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Request rejected.";
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
             return RedirectToAction(nameof(IncomingRequests));
         }
 

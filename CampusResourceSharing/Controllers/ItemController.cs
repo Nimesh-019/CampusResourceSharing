@@ -123,6 +123,52 @@ namespace CampusResourceSharing.Controllers
             return View(items);
         }
 
+        // GET: Item/History/5
+        // Shows complete request history only for a specific item owned by the logged-in student
+        public async Task<IActionResult> History(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var item = await _context.Items
+                .Include(i => i.Owner)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item == null)
+            {
+                return NotFound();
+            }
+
+            // Enforce authorization: an owner should only be able to view the history of items that they own/shared
+            if (item.OwnerId != userId)
+            {
+                TempData["Error"] = "You are only authorized to view the request history of your own items.";
+                return RedirectToAction(nameof(MyItems));
+            }
+
+            var requests = await _context.Requests
+                .Include(r => r.Requester)
+                .Where(r => r.ItemId == id)
+                .OrderByDescending(r => r.RequestedAt)
+                .ToListAsync();
+
+            var viewModel = new ItemHistoryViewModel
+            {
+                Item = item,
+                Requests = requests
+            };
+
+            return View(viewModel);
+        }
+
         // GET: Item/Details/5
         [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)

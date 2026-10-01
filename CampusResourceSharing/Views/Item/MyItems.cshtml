@@ -92,14 +92,17 @@
                             </p>
                         </div>
 
-                        <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-3 pt-0">
+                        <div class="card-footer bg-white border-top-0 d-flex flex-wrap justify-content-between align-items-center gap-2 pb-3 pt-0">
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm">
                                 Details
                             </a>
 
-                            <div class="d-flex gap-1">
+                            <div class="d-flex flex-wrap gap-1">
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-warning btn-sm fw-semibold">
                                     Edit
+                                </a>
+                                <a asp-action="History" asp-route-id="@item.Id" class="btn btn-outline-info btn-sm fw-semibold">
+                                    History
                                 </a>
                                 <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm fw-semibold">
                                     Delete

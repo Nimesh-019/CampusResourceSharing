@@ -44,5 +44,8 @@ namespace CampusResourceSharing.Models
         public DateTime EndDate { get; set; } = DateTime.Today;
 
         public DateTime RequestedAt { get; set; } = DateTime.Now;
+
+        [Display(Name = "Responded At")]
+        public DateTime? RespondedAt { get; set; }
     }
 }
