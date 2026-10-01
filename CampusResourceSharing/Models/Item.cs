@@ -44,5 +44,8 @@ namespace CampusResourceSharing.Models
         public ItemStatus Status { get; set; } = ItemStatus.Pending;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [ValidateNever]
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

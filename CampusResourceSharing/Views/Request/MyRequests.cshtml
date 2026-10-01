@@ -125,6 +125,19 @@
                                         </button>
                                     </form>
                                 }
+                                else if (request.Status == "Accepted")
+                                {
+                                    @if (request.EndDate.Date < DateTime.Today)
+                                    {
+                                        <a asp-controller="Review" asp-action="Index" asp-route-itemId="@request.ItemId" class="btn btn-sm btn-outline-primary fw-semibold">
+                                            Review Item
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">Active Borrowing</span>
+                                    }
+                                }
                                 else
                                 {
                                     <span class="text-muted">&mdash;</span>

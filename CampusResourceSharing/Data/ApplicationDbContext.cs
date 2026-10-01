@@ -14,6 +14,7 @@ namespace CampusResourceSharing.Data
 
         public DbSet<Request> Requests { get; set; }
         public DbSet<Item> Items { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -30,6 +31,27 @@ namespace CampusResourceSharing.Data
                 .WithMany()
                 .HasForeignKey(r => r.RequesterId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Review>(entity =>
+            {
+                entity.HasOne(r => r.Item)
+                    .WithMany(i => i.Reviews)
+                    .HasForeignKey(r => r.ItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Reviewer)
+                    .WithMany()
+                    .HasForeignKey(r => r.ReviewerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.BorrowRequest)
+                    .WithOne(br => br.Review)
+                    .HasForeignKey<Review>(r => r.BorrowRequestId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(r => r.BorrowRequestId)
+                    .IsUnique();
+            });
         }
     }
 }

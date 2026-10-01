@@ -59,7 +59,10 @@
                                 </div>
                             }
 
-                            <div class="mt-auto d-flex gap-2">
+                            <div class="mt-auto d-flex flex-wrap gap-2">
+                                <a asp-controller="Review" asp-action="Index" asp-route-itemId="@Model.Id" class="btn btn-outline-primary fw-semibold">
+                                    Reviews
+                                </a>
                                 @if (Model.IsAvailable && User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value != Model.OwnerId)
                                 {
                                     <a asp-controller="Request" asp-action="Create" asp-route-itemId="@Model.Id" class="btn btn-primary fw-bold px-4">

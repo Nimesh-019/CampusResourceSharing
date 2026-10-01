@@ -47,5 +47,8 @@ namespace CampusResourceSharing.Models
 
         [Display(Name = "Responded At")]
         public DateTime? RespondedAt { get; set; }
+
+        [ValidateNever]
+        public Review? Review { get; set; }
     }
 }

@@ -1,0 +1,100 @@
+@model CampusResourceSharing.ViewModels.ItemReviewsViewModel
+
+<div class="modal-header">
+    <div>
+        <h5 class="modal-title fw-bold">Reviews - @Model.Item.Name</h5>
+        <small class="text-muted">Category: @Model.Item.Category &middot; Shared by: @Model.Item.Owner?.FullName</small>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body p-4">
+    <!-- Rating summary -->
+    <div class="card bg-light border-0 p-3 text-center mb-4">
+        @if (Model.TotalReviews > 0)
+        {
+            <div class="display-6 fw-bold text-dark mb-1">@Model.AverageRating.ToString("0.0") / 5.0</div>
+            <div class="fs-5 text-warning mb-1">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    if (i <= Math.Round(Model.AverageRating))
+                    {
+                        <span>&#9733;</span>
+                    }
+                    else
+                    {
+                        <span class="text-secondary opacity-25">&#9733;</span>
+                    }
+                }
+            </div>
+            <small class="text-muted">Based on @Model.TotalReviews @(Model.TotalReviews == 1 ? "review" : "reviews")</small>
+        }
+        else
+        {
+            <div class="text-muted fw-bold">No ratings yet</div>
+            <small class="text-muted">0 reviews</small>
+        }
+    </div>
+
+    <!-- Write review if eligible -->
+    @if (Model.IsEligibleToReview)
+    {
+        <div class="mb-4">
+            <a asp-controller="Review" asp-action="Index" asp-route-itemId="@Model.Item.Id" class="btn btn-primary w-100 fw-bold">
+                Write a Review
+            </a>
+        </div>
+    }
+
+    <!-- Reviews list -->
+    <h6 class="fw-bold mb-3">All Reviews (@Model.TotalReviews)</h6>
+    @if (!Model.Reviews.Any())
+    {
+        <div class="alert alert-light text-center py-4 border">
+            <p class="mb-0 text-muted">No reviews yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var review in Model.Reviews)
+            {
+                <div class="border rounded p-3 bg-white shadow-sm">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <strong>@(review.Reviewer?.FullName ?? "Student Reviewer")</strong>
+                            @if (!string.IsNullOrEmpty(review.Reviewer?.Department))
+                            {
+                                <small class="text-muted d-block">Dept: @review.Reviewer.Department</small>
+                            }
+                        </div>
+                        <div class="text-end">
+                            <div class="text-warning">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    if (i <= review.Rating)
+                                    {
+                                        <span>&#9733;</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary opacity-25">&#9733;</span>
+                                    }
+                                }
+                            </div>
+                            <small class="text-muted">@review.CreatedAt.ToString("MMM dd, yyyy")</small>
+                        </div>
+                    </div>
+                    <p class="mb-0 small text-dark mt-2">@review.Comment</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="modal-footer">
+    <a asp-controller="Review" asp-action="Index" asp-route-itemId="@Model.Item.Id" class="btn btn-primary btn-sm">
+        Full Reviews Page
+    </a>
+    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+</div>
