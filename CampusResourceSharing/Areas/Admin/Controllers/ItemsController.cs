@@ -1,5 +1,6 @@
 using CampusResourceSharing.Data;
 using CampusResourceSharing.Models;
+using CampusResourceSharing.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,72 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
                 .ToListAsync();
 
             return View(items);
+        }
+
+        // GET: /Admin/Items/History/5
+        [HttpGet]
+        public async Task<IActionResult> History(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var item = await _context.Items
+                .Include(i => i.Owner)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item == null)
+            {
+                return NotFound();
+            }
+
+            var requests = await _context.Requests
+                .Include(r => r.Requester)
+                .Where(r => r.ItemId == id)
+                .OrderByDescending(r => r.RequestedAt)
+                .ToListAsync();
+
+            var viewModel = new ItemHistoryViewModel
+            {
+                Item = item,
+                Requests = requests
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: /Admin/Items/HistoryModal/5
+        [HttpGet]
+        public async Task<IActionResult> HistoryModal(int? id)
+        {
+            if (id == null)
+            {
+                return BadRequest();
+            }
+
+            var item = await _context.Items
+                .Include(i => i.Owner)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (item == null)
+            {
+                return NotFound();
+            }
+
+            var requests = await _context.Requests
+                .Include(r => r.Requester)
+                .Where(r => r.ItemId == id)
+                .OrderByDescending(r => r.RequestedAt)
+                .ToListAsync();
+
+            var viewModel = new ItemHistoryViewModel
+            {
+                Item = item,
+                Requests = requests
+            };
+
+            return PartialView("_ItemHistoryModalPartial", viewModel);
         }
 
         // GET: /Admin/Items/Rejected

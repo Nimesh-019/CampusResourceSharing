@@ -58,9 +58,117 @@
                                 <strong>Date Added:</strong> @item.CreatedAt.ToString("MMM dd, yyyy")
                             </div>
                         </div>
+                        <div class="card-footer bg-white border-top-0 pb-3 pt-0">
+                            <a asp-area="Admin" asp-controller="Items" asp-action="History" asp-route-id="@item.Id"
+                               class="btn btn-outline-primary btn-sm w-100 fw-semibold btn-item-history"
+                               data-item-id="@item.Id"
+                               data-item-name="@item.Name"
+                               data-modal-url="@Url.Action("HistoryModal", "Items", new { area = "Admin", id = item.Id })"
+                               data-page-url="@Url.Action("History", "Items", new { area = "Admin", id = item.Id })">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-clock-history me-1" viewBox="0 0 16 16">
+                                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.566.075 1.139l-.99-.074a7 7 0 0 0 .03-.87m-.14 1.494q.12-.578.14-1.164l1 .06a8 8 0 0 1-.18 1.382l-.96-.278zm-.79 1.488a7 7 0 0 0 .34-.438l.86.51a8 8 0 0 1-.68.962l-.73-.614a7 7 0 0 0 .21-.42m-.97 1.29a7 7 0 0 0 .52-.308l.63.774a8 8 0 0 1-.92.708l-.51-.861a7 7 0 0 0 .28-.313m-1.42 1.03a7 7 0 0 0 .67-.184l.36.932a8 8 0 0 1-1.12.394l-.23-.973q.16.027.32.031m-1.74.56q.589-.09 1.15-.26l.3 1.054a8 8 0 0 1-1.34.336l-.11-1.13zm-1.81.144q.591-.013 1.17-.113l.17 1.096a8 8 0 0 1-1.39.143l.05-1.126zM8 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14m0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16"/>
+                                    <path d="M7 3.5a.5.5 0 0 1 .5-.5H8a.5.5 0 0 1 .5.5V8.207l2.146 2.147a.5.5 0 0 1-.708.708l-2.5-2.5A.5.5 0 0 1 7 8.5z"/>
+                                </svg>
+                                History
+                            </a>
+                        </div>
                     </div>
                 </div>
             }
         </div>
     }
 </div>
+
+<!-- History Modal -->
+<div class="modal fade" id="itemHistoryModal" tabindex="-1" aria-labelledby="itemHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-clock-history text-primary" viewBox="0 0 16 16">
+                        <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.566.075 1.139l-.99-.074a7 7 0 0 0 .03-.87m-.14 1.494q.12-.578.14-1.164l1 .06a8 8 0 0 1-.18 1.382l-.96-.278zm-.79 1.488a7 7 0 0 0 .34-.438l.86.51a8 8 0 0 1-.68.962l-.73-.614a7 7 0 0 0 .21-.42m-.97 1.29a7 7 0 0 0 .52-.308l.63.774a8 8 0 0 1-.92.708l-.51-.861a7 7 0 0 0 .28-.313m-1.42 1.03a7 7 0 0 0 .67-.184l.36.932a8 8 0 0 1-1.12.394l-.23-.973q.16.027.32.031m-1.74.56q.589-.09 1.15-.26l.3 1.054a8 8 0 0 1-1.34.336l-.11-1.13zm-1.81.144q.591-.013 1.17-.113l.17 1.096a8 8 0 0 1-1.39.143l.05-1.126zM8 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14m0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16"/>
+                        <path d="M7 3.5a.5.5 0 0 1 .5-.5H8a.5.5 0 0 1 .5.5V8.207l2.146 2.147a.5.5 0 0 1-.708.708l-2.5-2.5A.5.5 0 0 1 7 8.5z"/>
+                    </svg>
+                    <h5 class="modal-title fw-bold mb-0" id="itemHistoryModalLabel">Item History</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="itemHistoryModalBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading history...</span>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Loading complete item history...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <a id="btnFullHistoryPage" href="#" class="btn btn-outline-primary btn-sm fw-semibold">
+                    Open Full Page View &rarr;
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('itemHistoryModal');
+            if (!modalEl) return;
+
+            var historyModal = new bootstrap.Modal(modalEl);
+            var modalLabel = document.getElementById('itemHistoryModalLabel');
+            var modalBody = document.getElementById('itemHistoryModalBody');
+            var btnFullPage = document.getElementById('btnFullHistoryPage');
+
+            document.querySelectorAll('.btn-item-history').forEach(function (button) {
+                button.addEventListener('click', function (e) {
+                    // Allow normal opening in new tab if requested
+                    if (e.ctrlKey || e.metaKey || e.which === 2) {
+                        return;
+                    }
+                    e.preventDefault();
+
+                    var itemName = this.getAttribute('data-item-name') || 'Item';
+                    var modalUrl = this.getAttribute('data-modal-url');
+                    var pageUrl = this.getAttribute('data-page-url');
+
+                    modalLabel.textContent = 'Item History - ' + itemName;
+                    btnFullPage.href = pageUrl;
+
+                    modalBody.innerHTML = `
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">Loading complete item history...</p>
+                        </div>
+                    `;
+
+                    historyModal.show();
+
+                    fetch(modalUrl)
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('HTTP ' + response.status);
+                            }
+                            return response.text();
+                        })
+                        .then(function (html) {
+                            modalBody.innerHTML = html;
+                        })
+                        .catch(function (error) {
+                            modalBody.innerHTML = `
+                                <div class="alert alert-danger py-4 text-center">
+                                    <h6 class="fw-bold mb-1">Failed to load item history</h6>
+                                    <p class="text-muted small mb-3">An error occurred while loading history for this item.</p>
+                                    <a href="${pageUrl}" class="btn btn-sm btn-primary">Open Dedicated History Page</a>
+                                </div>
+                            `;
+                        });
+                });
+            });
+        });
+    </script>
+}

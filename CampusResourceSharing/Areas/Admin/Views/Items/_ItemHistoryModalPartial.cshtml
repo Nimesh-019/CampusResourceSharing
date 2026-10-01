@@ -1,0 +1,291 @@
+@model CampusResourceSharing.ViewModels.ItemHistoryViewModel
+
+@{
+    var today = DateTime.Today;
+}
+
+<div class="item-history-modal-content">
+    <!-- Item & Owner Overview Card -->
+    <div class="card border-0 bg-light rounded-3 p-3 mb-4 shadow-sm">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                @if (!string.IsNullOrEmpty(Model.Item.ImagePath))
+                {
+                    <img src="@Model.Item.ImagePath"
+                         class="rounded border shadow-sm"
+                         style="width: 100px; height: 100px; object-fit: cover;"
+                         alt="@Model.Item.Name" />
+                }
+                else
+                {
+                    <div class="rounded border bg-white d-flex align-items-center justify-content-center text-muted"
+                         style="width: 100px; height: 100px;">
+                        <span class="small fw-medium">No Image</span>
+                    </div>
+                }
+            </div>
+
+            <div class="col">
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        @Model.Item.Category
+                    </span>
+
+                    @if (!string.IsNullOrEmpty(Model.Item.Condition))
+                    {
+                        <span class="badge bg-secondary-subtle text-dark border">
+                            Condition: @Model.Item.Condition
+                        </span>
+                    }
+
+                    <span class="badge bg-success">
+                        Item Status: Approved
+                    </span>
+
+                    @if (Model.Item.IsAvailable)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Available</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Currently Unavailable</span>
+                    }
+                </div>
+
+                <h4 class="fw-bold text-dark mb-1">@Model.Item.Name</h4>
+
+                <p class="text-muted small mb-2">
+                    @(string.IsNullOrEmpty(Model.Item.Description) ? "No description provided." : Model.Item.Description)
+                </p>
+
+                <div class="small text-muted">
+                    <span class="me-3">
+                        <strong>Added On:</strong> @Model.Item.CreatedAt.ToString("MMM dd, yyyy - hh:mm tt")
+                    </span>
+                </div>
+            </div>
+
+            <!-- Owner Information Box -->
+            <div class="col-12 col-lg-4 border-top border-lg-start border-2 pt-3 pt-lg-0 ps-lg-3">
+                <div class="p-2 rounded bg-white border">
+                    <div class="text-muted small fw-semibold text-uppercase mb-1">
+                        Resource Owner Information
+                    </div>
+                    @if (Model.Item.Owner != null)
+                    {
+                        <div class="fw-bold text-dark">@Model.Item.Owner.FullName</div>
+                        <div class="small text-muted">
+                            <strong>Dept:</strong> @(string.IsNullOrEmpty(Model.Item.Owner.Department) ? "N/A" : Model.Item.Owner.Department)
+                        </div>
+                        <div class="small text-muted">
+                            <strong>Email:</strong> @Model.Item.Owner.Email
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.Item.Owner.PhoneNumber))
+                        {
+                            <div class="small text-muted">
+                                <strong>Phone:</strong> @Model.Item.Owner.PhoneNumber
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Item.Owner.Address))
+                        {
+                            <div class="small text-muted">
+                                <strong>Address:</strong> @Model.Item.Owner.Address
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted small fst-italic">Owner ID: @Model.Item.OwnerId</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Summary Statistics Pills -->
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center bg-white shadow-sm">
+                <div class="small text-muted fw-semibold">Total Requests</div>
+                <div class="fs-5 fw-bold text-dark">@Model.TotalRequests</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center bg-white shadow-sm">
+                <div class="small text-success fw-semibold">Approved / Accepted</div>
+                <div class="fs-5 fw-bold text-success">@Model.ApprovedRequests</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center bg-white shadow-sm">
+                <div class="small text-warning-emphasis fw-semibold">Pending Requests</div>
+                <div class="fs-5 fw-bold text-warning-emphasis">@Model.PendingRequests</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center bg-white shadow-sm">
+                <div class="small text-danger fw-semibold">Rejected Requests</div>
+                <div class="fs-5 fw-bold text-danger">@Model.RejectedRequests</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Activity Timeline Section -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="fw-bold mb-0">Borrowing Request History</h5>
+        <span class="badge bg-secondary">Total: @Model.TotalRequests</span>
+    </div>
+
+    @if (!Model.Requests.Any())
+    {
+        <div class="alert alert-info text-center py-4 mb-0 rounded-3 shadow-sm">
+            <div class="mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-clock-history text-info" viewBox="0 0 16 16">
+                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.566.075 1.139l-.99-.074a7 7 0 0 0 .03-.87m-.14 1.494q.12-.578.14-1.164l1 .06a8 8 0 0 1-.18 1.382l-.96-.278zm-.79 1.488a7 7 0 0 0 .34-.438l.86.51a8 8 0 0 1-.68.962l-.73-.614a7 7 0 0 0 .21-.42m-.97 1.29a7 7 0 0 0 .52-.308l.63.774a8 8 0 0 1-.92.708l-.51-.861a7 7 0 0 0 .28-.313m-1.42 1.03a7 7 0 0 0 .67-.184l.36.932a8 8 0 0 1-1.12.394l-.23-.973q.16.027.32.031m-1.74.56q.589-.09 1.15-.26l.3 1.054a8 8 0 0 1-1.34.336l-.11-1.13zm-1.81.144q.591-.013 1.17-.113l.17 1.096a8 8 0 0 1-1.39.143l.05-1.126zM8 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14m0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16"/>
+                    <path d="M7 3.5a.5.5 0 0 1 .5-.5H8a.5.5 0 0 1 .5.5V8.207l2.146 2.147a.5.5 0 0 1-.708.708l-2.5-2.5A.5.5 0 0 1 7 8.5z"/>
+                </svg>
+            </div>
+            <h6 class="alert-heading fw-bold mb-1">No Request History Found</h6>
+            <p class="mb-0 text-muted small">No students have submitted borrowing requests for this approved resource yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive rounded border bg-white shadow-sm">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Requester Student</th>
+                        <th>Borrowing Duration</th>
+                        <th>Requested On</th>
+                        <th>Student Message</th>
+                        <th>Request Status</th>
+                        <th>Decision On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int index = 1;
+                    }
+                    @foreach (var request in Model.Requests)
+                    {
+                        var isCurrentlyActive = request.Status == "Accepted" &&
+                            today >= request.StartDate.Date &&
+                            today <= request.EndDate.Date;
+
+                        <tr>
+                            <td class="text-muted fw-semibold">@(index++)</td>
+
+                            <!-- Requester Details -->
+                            <td>
+                                @if (request.Requester != null)
+                                {
+                                    <div class="fw-bold text-dark">@request.Requester.FullName</div>
+                                    <small class="text-muted d-block">
+                                        <strong>Dept:</strong> @(string.IsNullOrEmpty(request.Requester.Department) ? "—" : request.Requester.Department)
+                                    </small>
+                                    <small class="text-muted d-block">
+                                        <strong>Email:</strong> @request.Requester.Email
+                                    </small>
+                                    @if (!string.IsNullOrEmpty(request.Requester.PhoneNumber))
+                                    {
+                                        <small class="text-muted d-block">
+                                            <strong>Phone:</strong> @request.Requester.PhoneNumber
+                                        </small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">ID: @request.RequesterId</span>
+                                }
+                            </td>
+
+                            <!-- Borrowing Duration -->
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    @request.StartDate.ToString("MMM dd, yyyy") &mdash; @request.EndDate.ToString("MMM dd, yyyy")
+                                </span>
+                                <div class="text-muted small mt-1">
+                                    @((request.EndDate.Date - request.StartDate.Date).Days + 1) day(s) duration
+                                </div>
+                                @if (isCurrentlyActive)
+                                {
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle mt-1">
+                                        Currently Borrowed
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Requested At -->
+                            <td>
+                                <div class="fw-medium small">@request.RequestedAt.ToString("MMM dd, yyyy")</div>
+                                <small class="text-muted">@request.RequestedAt.ToString("hh:mm tt")</small>
+                            </td>
+
+                            <!-- Request Message -->
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(request.Message))
+                                {
+                                    <div class="small text-break" style="max-width: 220px;">
+                                        @request.Message
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fst-italic">No message</span>
+                                }
+                            </td>
+
+                            <!-- Request Status -->
+                            <td>
+                                @if (request.Status == "Accepted")
+                                {
+                                    <span class="badge bg-success">Approved / Accepted</span>
+                                    <small class="text-success d-block fw-semibold mt-1">
+                                        &check; Approved by Owner
+                                    </small>
+                                }
+                                else if (request.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
+                                    <small class="text-danger d-block fw-semibold mt-1">
+                                        &cross; Rejected by Owner
+                                    </small>
+                                }
+                                else if (request.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    <small class="text-warning-emphasis d-block fw-semibold mt-1">
+                                        Awaiting Response
+                                    </small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@request.Status</span>
+                                }
+                            </td>
+
+                            <!-- Decision Date / RespondedAt -->
+                            <td>
+                                @if (request.RespondedAt.HasValue)
+                                {
+                                    <div class="fw-medium small">@request.RespondedAt.Value.ToString("MMM dd, yyyy")</div>
+                                    <small class="text-muted">@request.RespondedAt.Value.ToString("hh:mm tt")</small>
+                                }
+                                else if (request.Status == "Pending")
+                                {
+                                    <span class="text-muted small fst-italic">Pending decision</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fst-italic">Not recorded</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
