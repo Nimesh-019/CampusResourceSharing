@@ -167,10 +167,12 @@
 
                         <!-- Form Collapse -->
                         <div class="collapse show" id="reviewFormCollapse">
-                            <form asp-controller="Review" asp-action="Create" method="post" class="border rounded p-3 bg-light mt-2">
+                            <form asp-controller="Review" asp-action="Create" asp-route-itemId="@Model.Item.Id" method="post" class="border rounded p-3 bg-light mt-2">
                                 @Html.AntiForgeryToken()
-                                <input type="hidden" asp-for="NewReview.ItemId" />
-                                <input type="hidden" asp-for="NewReview.BorrowRequestId" />
+                                <input type="hidden" name="ItemId" value="@Model.Item.Id" />
+                                <input type="hidden" name="BorrowRequestId" value="@(Model.EligibleBorrowRequestId ?? Model.NewReview.BorrowRequestId)" />
+                                <input type="hidden" name="NewReview.ItemId" value="@Model.Item.Id" />
+                                <input type="hidden" name="NewReview.BorrowRequestId" value="@(Model.EligibleBorrowRequestId ?? Model.NewReview.BorrowRequestId)" />
 
                                 <div class="mb-3">
                                     <label class="form-label fw-bold small text-dark mb-1">Rating (1 to 5 Stars) <span class="text-danger">*</span></label>
@@ -182,21 +184,29 @@
                                             <span class="star-item" data-value="4" title="4 Stars - Very Good">&#9733;</span>
                                             <span class="star-item" data-value="5" title="5 Stars - Excellent">&#9733;</span>
                                         </div>
-                                        <select asp-for="NewReview.Rating" id="ratingSelect" class="form-select form-select-sm w-auto fw-semibold">
-                                            <option value="5">5 - Excellent</option>
-                                            <option value="4">4 - Very Good</option>
-                                            <option value="3">3 - Good</option>
-                                            <option value="2">2 - Fair</option>
-                                            <option value="1">1 - Poor</option>
+                                        <select name="Rating" id="ratingSelect" class="form-select form-select-sm w-auto fw-semibold">
+                                            <option value="5" selected="@(Model.NewReview.Rating == 5)">5 - Excellent</option>
+                                            <option value="4" selected="@(Model.NewReview.Rating == 4)">4 - Very Good</option>
+                                            <option value="3" selected="@(Model.NewReview.Rating == 3)">3 - Good</option>
+                                            <option value="2" selected="@(Model.NewReview.Rating == 2)">2 - Fair</option>
+                                            <option value="1" selected="@(Model.NewReview.Rating == 1)">1 - Poor</option>
                                         </select>
                                     </div>
-                                    <span asp-validation-for="NewReview.Rating" class="text-danger small"></span>
+                                    <span asp-validation-for="NewReview.Rating" class="text-danger small d-block"></span>
+                                    @if (ViewData.ModelState["Rating"]?.Errors.Any() == true)
+                                    {
+                                        <span class="text-danger small d-block">@ViewData.ModelState["Rating"]!.Errors[0].ErrorMessage</span>
+                                    }
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label fw-bold small text-dark mb-1">Review Comment <span class="text-danger">*</span></label>
-                                    <textarea asp-for="NewReview.Comment" class="form-control" rows="3" placeholder="Describe the item condition, your borrowing experience, and whether you recommend it to others..."></textarea>
-                                    <span asp-validation-for="NewReview.Comment" class="text-danger small"></span>
+                                    <textarea name="Comment" class="form-control" rows="3" placeholder="Describe the item condition, your borrowing experience, and whether you recommend it to others...">@Model.NewReview.Comment</textarea>
+                                    <span asp-validation-for="NewReview.Comment" class="text-danger small d-block"></span>
+                                    @if (ViewData.ModelState["Comment"]?.Errors.Any() == true)
+                                    {
+                                        <span class="text-danger small d-block">@ViewData.ModelState["Comment"]!.Errors[0].ErrorMessage</span>
+                                    }
                                 </div>
 
                                 <div class="d-flex justify-content-end gap-2">

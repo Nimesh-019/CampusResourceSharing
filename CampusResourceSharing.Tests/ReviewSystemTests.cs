@@ -697,5 +697,159 @@ namespace CampusResourceSharing.Tests
             Assert.Equal(5.0, model.AverageRating);
             Assert.Single(model.Reviews);
         }
+
+        // 13. GET /Review/Create redirects gracefully to Reviews page or Items page without 404
+        [Fact]
+        public void Scenario13_GetCreate_RedirectsWithout404()
+        {
+            using var context = CreateInMemoryDbContext();
+            var controller = CreateController(context, "student-1");
+
+            // GET with itemId
+            var resultWithId = controller.Create(itemId: 3) as RedirectToActionResult;
+            Assert.NotNull(resultWithId);
+            Assert.Equal("Index", resultWithId.ActionName);
+            Assert.Equal(3, resultWithId.RouteValues?["itemId"]);
+
+            // GET without itemId
+            var resultWithoutId = controller.Create(itemId: null) as RedirectToActionResult;
+            Assert.NotNull(resultWithoutId);
+            Assert.Equal("Index", resultWithoutId.ActionName);
+            Assert.Equal("Item", resultWithoutId.ControllerName);
+        }
+
+        // 14. Validation errors return View with ModelState errors, not a 404
+        [Fact]
+        public async Task Scenario14_PostCreate_InvalidInput_ReturnsViewWithValidationErrors_No404()
+        {
+            using var context = CreateInMemoryDbContext();
+            var ownerId = "owner-1";
+            var studentId = "student-1";
+
+            context.Users.Add(CreateUser(ownerId, "Textbook Owner"));
+            context.Users.Add(CreateUser(studentId, "Reviewer"));
+
+            var item = new Item
+            {
+                Id = 3,
+                Name = "Computer Networks 6th edition",
+                Category = "Books",
+                OwnerId = ownerId,
+                Status = ItemStatus.Approved
+            };
+            context.Items.Add(item);
+
+            context.Requests.Add(new Request
+            {
+                Id = 30,
+                ItemId = 3,
+                RequesterId = studentId,
+                Status = "Accepted",
+                StartDate = DateTime.Today.AddDays(-10),
+                EndDate = DateTime.Today.AddDays(-3)
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateController(context, studentId);
+
+            // Submitting blank comment and rating out of range
+            var postResult = await controller.Create(new CreateReviewViewModel
+            {
+                ItemId = 3,
+                BorrowRequestId = 30,
+                Rating = 0,
+                Comment = ""
+            }) as ViewResult;
+
+            Assert.NotNull(postResult);
+            Assert.Equal("Index", postResult.ViewName);
+            Assert.False(controller.ModelState.IsValid);
+            Assert.True(controller.ModelState.ContainsKey("Comment") || controller.ModelState.ContainsKey("NewReview.Comment"));
+            Assert.True(controller.ModelState.ContainsKey("Rating") || controller.ModelState.ContainsKey("NewReview.Rating"));
+
+            // Verify no review saved to DB
+            Assert.Empty(context.Reviews);
+        }
+
+        // 15. Form submitted with NewReview. prefix (tag helper output) binds and saves successfully without 404
+        [Fact]
+        public async Task Scenario15_PostCreate_WithNewReviewPrefix_BindsAndSavesSuccessfully()
+        {
+            using var context = CreateInMemoryDbContext();
+            var ownerId = "owner-1";
+            var studentId = "student-1";
+
+            context.Users.Add(CreateUser(ownerId, "Book Owner"));
+            context.Users.Add(CreateUser(studentId, "Eligible Borrower"));
+
+            var item = new Item
+            {
+                Id = 3,
+                Name = "Computer Networks 6th edition",
+                Category = "Books",
+                OwnerId = ownerId,
+                Status = ItemStatus.Approved
+            };
+            context.Items.Add(item);
+
+            context.Requests.Add(new Request
+            {
+                Id = 31,
+                ItemId = 3,
+                RequesterId = studentId,
+                Status = "Accepted",
+                StartDate = DateTime.Today.AddDays(-14),
+                EndDate = DateTime.Today.AddDays(-2)
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateController(context, studentId);
+
+            // Simulate form submission with NewReview. prefix in Request.Form
+            var formFields = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+            {
+                { "NewReview.ItemId", "3" },
+                { "NewReview.BorrowRequestId", "31" },
+                { "NewReview.Rating", "4" },
+                { "NewReview.Comment", "It is a nice book. Good condition." }
+            };
+            controller.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
+            controller.HttpContext.Request.Form = new FormCollection(formFields);
+
+            // Controller action called with default (unbound) model
+            var postResult = await controller.Create(new CreateReviewViewModel()) as RedirectToActionResult;
+
+            Assert.NotNull(postResult);
+            Assert.Equal("Index", postResult.ActionName);
+            Assert.Equal(3, postResult.RouteValues?["itemId"]);
+            Assert.Contains("successfully", controller.TempData["Success"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+
+            var savedReview = await context.Reviews.FirstOrDefaultAsync(r => r.ItemId == 3);
+            Assert.NotNull(savedReview);
+            Assert.Equal(4, savedReview.Rating);
+            Assert.Equal("It is a nice book. Good condition.", savedReview.Comment);
+            Assert.Equal(31, savedReview.BorrowRequestId);
+            Assert.Equal(studentId, savedReview.ReviewerId);
+        }
+
+        // 16. Non-existent item redirects with user-friendly error instead of 404
+        [Fact]
+        public async Task Scenario16_PostCreate_NonExistentItem_RedirectsWithError_No404()
+        {
+            using var context = CreateInMemoryDbContext();
+            var controller = CreateController(context, "student-1");
+
+            var postResult = await controller.Create(new CreateReviewViewModel
+            {
+                ItemId = 99999,
+                Rating = 5,
+                Comment = "Testing non-existent item"
+            }) as RedirectToActionResult;
+
+            Assert.NotNull(postResult);
+            Assert.Equal("Index", postResult.ActionName);
+            Assert.Equal("Item", postResult.ControllerName);
+            Assert.Contains("could not be found", controller.TempData["Error"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace CampusResourceSharing.Controllers
             _context = context;
         }
 
-        // GET: /Review/Index?itemId=5 or /Review/Index/5
+        // GET: /Review or /Review/Index?itemId=5 or /Review/Index/5
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> Index(int? id, int? itemId)
@@ -25,7 +25,7 @@ namespace CampusResourceSharing.Controllers
             int targetItemId = itemId ?? id ?? 0;
             if (targetItemId <= 0)
             {
-                return NotFound();
+                return RedirectToAction("Index", "Item");
             }
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -33,7 +33,8 @@ namespace CampusResourceSharing.Controllers
 
             if (viewModel == null)
             {
-                return NotFound();
+                TempData["Error"] = "Item not found.";
+                return RedirectToAction("Index", "Item");
             }
 
             return View(viewModel);
@@ -63,6 +64,18 @@ namespace CampusResourceSharing.Controllers
             return PartialView("_ItemReviewsModalPartial", viewModel);
         }
 
+        // GET: /Review/Create (friendly redirect to Reviews page if user navigates or refreshes)
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Create(int? itemId)
+        {
+            if (itemId.HasValue && itemId.Value > 0)
+            {
+                return RedirectToAction(nameof(Index), new { itemId = itemId.Value });
+            }
+            return RedirectToAction("Index", "Item");
+        }
+
         // POST: /Review/Create
         [HttpPost]
         [Authorize]
@@ -75,19 +88,67 @@ namespace CampusResourceSharing.Controllers
                 return Unauthorized();
             }
 
+            model ??= new CreateReviewViewModel();
+
+            // Consolidate input from any binding source (prefix "NewReview", standard "model", or direct form fields)
+            if (Request?.HasFormContentType == true)
+            {
+                if (int.TryParse(Request.Form["NewReview.ItemId"], out int formItemId) && formItemId > 0)
+                    model.ItemId = formItemId;
+                else if (int.TryParse(Request.Form["ItemId"], out int fItemId) && fItemId > 0)
+                    model.ItemId = fItemId;
+
+                if (int.TryParse(Request.Form["NewReview.BorrowRequestId"], out int formReqId) && formReqId > 0)
+                    model.BorrowRequestId = formReqId;
+                else if (int.TryParse(Request.Form["BorrowRequestId"], out int fReqId) && fReqId > 0)
+                    model.BorrowRequestId = fReqId;
+
+                if (int.TryParse(Request.Form["NewReview.Rating"], out int formRating) && formRating > 0)
+                    model.Rating = formRating;
+                else if (int.TryParse(Request.Form["Rating"], out int fRating) && fRating > 0)
+                    model.Rating = fRating;
+
+                var formComment = Request.Form["NewReview.Comment"].ToString();
+                if (string.IsNullOrWhiteSpace(formComment))
+                    formComment = Request.Form["Comment"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(formComment))
+                    model.Comment = formComment;
+            }
+
+            // Fallback: check query string or route values if ItemId is still 0
+            if (model.ItemId <= 0)
+            {
+                if (int.TryParse(Request?.Query?["itemId"], out int qItemId) && qItemId > 0)
+                {
+                    model.ItemId = qItemId;
+                }
+                else if (RouteData?.Values != null && RouteData.Values.TryGetValue("itemId", out var rVal) && int.TryParse(rVal?.ToString(), out int rItemId) && rItemId > 0)
+                {
+                    model.ItemId = rItemId;
+                }
+            }
+
+            if (model.ItemId <= 0)
+            {
+                TempData["Error"] = "Item not specified.";
+                return RedirectToAction("Index", "Item");
+            }
+
             var item = await _context.Items
                 .FirstOrDefaultAsync(i => i.Id == model.ItemId);
 
             if (item == null)
             {
-                return NotFound();
+                TempData["Error"] = "The item you are reviewing could not be found.";
+                return RedirectToAction("Index", "Item");
             }
 
             // 1. Owner restriction: Owner cannot review their own item
             if (item.OwnerId == currentUserId)
             {
                 TempData["Error"] = "As the owner of this item, you cannot review your own item.";
-                return RedirectToAction(nameof(Index), new { itemId = model.ItemId });
+                return RedirectToAction(nameof(Index), new { itemId = item.Id });
             }
 
             var today = DateTime.Today;
@@ -95,7 +156,7 @@ namespace CampusResourceSharing.Controllers
             // 2. Server-side Eligibility Verification:
             // Check for an approved, completed borrowing request belonging to this student for this item with no existing review
             var eligibleRequest = await _context.Requests
-                .Where(r => r.ItemId == model.ItemId &&
+                .Where(r => r.ItemId == item.Id &&
                             r.RequesterId == currentUserId &&
                             r.Status == "Accepted" &&
                             r.EndDate.Date < today)
@@ -107,7 +168,7 @@ namespace CampusResourceSharing.Controllers
             {
                 // Determine precise reason for informative feedback
                 var activeBorrowing = await _context.Requests
-                    .Where(r => r.ItemId == model.ItemId &&
+                    .Where(r => r.ItemId == item.Id &&
                                 r.RequesterId == currentUserId &&
                                 r.Status == "Accepted" &&
                                 r.EndDate.Date >= today)
@@ -121,7 +182,7 @@ namespace CampusResourceSharing.Controllers
                 else
                 {
                     var alreadyReviewed = await _context.Requests
-                        .AnyAsync(r => r.ItemId == model.ItemId &&
+                        .AnyAsync(r => r.ItemId == item.Id &&
                                        r.RequesterId == currentUserId &&
                                        r.Status == "Accepted" &&
                                        r.EndDate.Date < today &&
@@ -137,24 +198,50 @@ namespace CampusResourceSharing.Controllers
                     }
                 }
 
-                return RedirectToAction(nameof(Index), new { itemId = model.ItemId });
+                return RedirectToAction(nameof(Index), new { itemId = item.Id });
             }
 
-            // 3. Model validation
+            // 3. Validation: Rating (1-5) and Comment (non-empty, min 3 chars)
+            if (model.Rating < 1 || model.Rating > 5)
+            {
+                ModelState.AddModelError("Rating", "Please select a rating between 1 and 5 stars.");
+                ModelState.AddModelError("NewReview.Rating", "Please select a rating between 1 and 5 stars.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Comment) || model.Comment.Trim().Length < 3)
+            {
+                ModelState.AddModelError("Comment", "Review comment is required and must be at least 3 characters.");
+                ModelState.AddModelError("NewReview.Comment", "Review comment is required and must be at least 3 characters.");
+            }
+
+            // Synchronize ModelState errors between prefixed and non-prefixed keys so tag helpers find them
+            if (ModelState.ContainsKey("Comment") && !ModelState.ContainsKey("NewReview.Comment"))
+            {
+                foreach (var err in ModelState["Comment"]!.Errors)
+                    ModelState.AddModelError("NewReview.Comment", err.ErrorMessage);
+            }
+            if (ModelState.ContainsKey("Rating") && !ModelState.ContainsKey("NewReview.Rating"))
+            {
+                foreach (var err in ModelState["Rating"]!.Errors)
+                    ModelState.AddModelError("NewReview.Rating", err.ErrorMessage);
+            }
+
             if (!ModelState.IsValid)
             {
-                var viewModel = await BuildReviewsViewModelAsync(model.ItemId, currentUserId);
+                var viewModel = await BuildReviewsViewModelAsync(item.Id, currentUserId);
                 if (viewModel != null)
                 {
                     viewModel.NewReview = model;
                     return View("Index", viewModel);
                 }
+                TempData["Error"] = "Please provide a valid rating (1-5 stars) and a review comment.";
+                return RedirectToAction(nameof(Index), new { itemId = item.Id });
             }
 
             // 4. Save review
             var review = new Review
             {
-                ItemId = model.ItemId,
+                ItemId = item.Id,
                 ReviewerId = currentUserId,
                 BorrowRequestId = eligibleRequest.Id,
                 Rating = model.Rating,
@@ -166,7 +253,7 @@ namespace CampusResourceSharing.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = "Your review has been submitted successfully!";
-            return RedirectToAction(nameof(Index), new { itemId = model.ItemId });
+            return RedirectToAction(nameof(Index), new { itemId = item.Id });
         }
 
         // ==========================================
