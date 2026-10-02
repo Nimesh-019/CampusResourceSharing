@@ -177,7 +177,14 @@ namespace CampusResourceSharing.Controllers
 
                 if (activeBorrowing != null)
                 {
-                    TempData["Error"] = $"You cannot submit a review while your borrowing period is still active (ends on {activeBorrowing.EndDate:MMM dd, yyyy}).";
+                    if (activeBorrowing.StartDate.Date > today)
+                    {
+                        TempData["Error"] = $"Your approved borrowing period for this item has not started yet (scheduled from {activeBorrowing.StartDate:MMM dd, yyyy} to {activeBorrowing.EndDate:MMM dd, yyyy}). You can submit a review once the borrowing duration has ended.";
+                    }
+                    else
+                    {
+                        TempData["Error"] = $"You cannot submit a review while your borrowing period is still active (ends on {activeBorrowing.EndDate:MMM dd, yyyy}).";
+                    }
                 }
                 else
                 {
@@ -358,8 +365,14 @@ namespace CampusResourceSharing.Controllers
             {
                 var activeReq = activeOrFutureRequests.OrderBy(r => r.EndDate).First();
                 viewModel.HasActiveBorrowing = true;
-                viewModel.ActiveBorrowingEndDate = activeReq.EndDate;
-                viewModel.EligibilityMessage = $"Your borrowing period for this item is currently active (ends on {activeReq.EndDate:MMM dd, yyyy}). You can submit a review once the borrowing duration has ended.";
+                if (activeReq.StartDate.Date > today)
+                {
+                    viewModel.EligibilityMessage = $"Your approved borrowing period for this item has not started yet (scheduled for {activeReq.StartDate:MMM dd, yyyy} - {activeReq.EndDate:MMM dd, yyyy}). You can submit a review once the borrowing duration has ended.";
+                }
+                else
+                {
+                    viewModel.EligibilityMessage = $"Your borrowing period for this item is currently active (ends on {activeReq.EndDate:MMM dd, yyyy}). You can submit a review once the borrowing duration has ended.";
+                }
             }
             else if (completedRequests.Any() && reviewedRequestIds.Count >= completedRequests.Count)
             {

@@ -851,5 +851,141 @@ namespace CampusResourceSharing.Tests
             Assert.Equal("Item", postResult.ControllerName);
             Assert.Contains("could not be found", controller.TempData["Error"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
         }
+
+        // 17. BorrowingStatus dynamically evaluates Upcoming -> Ongoing -> Completed
+        [Fact]
+        public void Scenario17_ApprovedRequest_BorrowingStatus_TransitionsCorrectlyByDate()
+        {
+            var request = new Request
+            {
+                Id = 1,
+                ItemId = 1,
+                RequesterId = "student-1",
+                Status = "Accepted",
+                StartDate = new DateTime(2026, 10, 5),
+                EndDate = new DateTime(2026, 10, 10)
+            };
+
+            // Before start date (Oct 4) -> Upcoming
+            Assert.Equal("Upcoming", request.GetBorrowingStatus(new DateTime(2026, 10, 4)));
+
+            // On start date (Oct 5) -> Ongoing
+            Assert.Equal("Ongoing", request.GetBorrowingStatus(new DateTime(2026, 10, 5)));
+
+            // Midway during borrowing (Oct 8) -> Ongoing
+            Assert.Equal("Ongoing", request.GetBorrowingStatus(new DateTime(2026, 10, 8)));
+
+            // On end date (Oct 10, borrowing day still active) -> Ongoing
+            Assert.Equal("Ongoing", request.GetBorrowingStatus(new DateTime(2026, 10, 10)));
+
+            // After end date has passed (Oct 11) -> Completed
+            Assert.Equal("Completed", request.GetBorrowingStatus(new DateTime(2026, 10, 11)));
+
+            // Long after end date -> Completed
+            Assert.Equal("Completed", request.GetBorrowingStatus(new DateTime(2026, 10, 20)));
+        }
+
+        // 18. Pending and Rejected requests do not have a borrowing status
+        [Fact]
+        public void Scenario18_PendingAndRejectedRequests_DoNotHaveBorrowingStatus()
+        {
+            var pendingRequest = new Request
+            {
+                Id = 2,
+                Status = "Pending",
+                StartDate = DateTime.Today.AddDays(-5),
+                EndDate = DateTime.Today.AddDays(5)
+            };
+
+            var rejectedRequest = new Request
+            {
+                Id = 3,
+                Status = "Rejected",
+                StartDate = DateTime.Today.AddDays(-10),
+                EndDate = DateTime.Today.AddDays(-2)
+            };
+
+            Assert.Null(pendingRequest.BorrowingStatus);
+            Assert.Equal("Pending", pendingRequest.DisplayStatus);
+
+            Assert.Null(rejectedRequest.BorrowingStatus);
+            Assert.Equal("Rejected", rejectedRequest.DisplayStatus);
+        }
+
+        // 19. Upcoming approved borrowing cannot be reviewed
+        [Fact]
+        public async Task Scenario19_UpcomingBorrowing_CannotBeReviewedUntilCompleted()
+        {
+            using var context = CreateInMemoryDbContext();
+            var ownerId = "owner-1";
+            var studentId = "student-1";
+
+            context.Users.Add(CreateUser(ownerId, "Textbook Owner"));
+            context.Users.Add(CreateUser(studentId, "Upcoming Borrower"));
+
+            var item = new Item
+            {
+                Id = 10,
+                Name = "Projector",
+                Category = "Electronics",
+                OwnerId = ownerId,
+                Status = ItemStatus.Approved
+            };
+            context.Items.Add(item);
+
+            // Approved, but starts in 3 days (Upcoming)
+            context.Requests.Add(new Request
+            {
+                Id = 100,
+                ItemId = 10,
+                RequesterId = studentId,
+                Status = "Accepted",
+                StartDate = DateTime.Today.AddDays(3),
+                EndDate = DateTime.Today.AddDays(7)
+            });
+            await context.SaveChangesAsync();
+
+            var controller = CreateController(context, studentId);
+
+            // GET eligibility
+            var result = await controller.Index(10, null) as ViewResult;
+            Assert.NotNull(result);
+            var model = result.Model as ItemReviewsViewModel;
+            Assert.NotNull(model);
+            Assert.False(model.IsEligibleToReview);
+            Assert.Contains("not started yet", model.EligibilityMessage ?? "", StringComparison.OrdinalIgnoreCase);
+
+            // Attempt POST submission
+            var postResult = await controller.Create(new CreateReviewViewModel
+            {
+                ItemId = 10,
+                BorrowRequestId = 100,
+                Rating = 5,
+                Comment = "Should not be able to review before borrowing starts"
+            }) as RedirectToActionResult;
+
+            Assert.NotNull(postResult);
+            Assert.Contains("not started yet", controller.TempData["Error"]?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(context.Reviews);
+        }
+
+        // 20. Completed borrowing allows review
+        [Fact]
+        public void Scenario20_CompletedBorrowing_IdentifiedCorrectly()
+        {
+            var completedRequest = new Request
+            {
+                Id = 5,
+                Status = "Accepted",
+                StartDate = DateTime.Today.AddDays(-10),
+                EndDate = DateTime.Today.AddDays(-2)
+            };
+
+            Assert.True(completedRequest.IsCompleted);
+            Assert.False(completedRequest.IsOngoing);
+            Assert.False(completedRequest.IsUpcoming);
+            Assert.Equal("Completed", completedRequest.BorrowingStatus);
+            Assert.Equal("Completed", completedRequest.DisplayStatus);
+        }
     }
 }

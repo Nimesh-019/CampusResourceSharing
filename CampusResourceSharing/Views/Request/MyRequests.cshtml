@@ -50,6 +50,7 @@
                         <th>Duration</th>
                         <th>Requested On</th>
                         <th>Message</th>
+                        <th>Request Status</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -96,6 +97,7 @@
                                     <span class="text-muted small">No message</span>
                                 }
                             </td>
+                            <!-- Request Status (Pending / Accepted / Rejected) -->
                             <td>
                                 @if (request.Status == "Pending")
                                 {
@@ -114,6 +116,37 @@
                                     <span class="badge bg-secondary">@request.Status</span>
                                 }
                             </td>
+                            <!-- Borrowing Status (Upcoming / Ongoing / Completed for approved; pending/rejected preserved) -->
+                            <td>
+                                @if (request.Status == "Accepted")
+                                {
+                                    @if (request.BorrowingStatus == "Upcoming")
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Upcoming</span>
+                                    }
+                                    else if (request.BorrowingStatus == "Ongoing")
+                                    {
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">Ongoing</span>
+                                    }
+                                    else if (request.BorrowingStatus == "Completed")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span>
+                                    }
+                                }
+                                else if (request.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else if (request.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@request.Status</span>
+                                }
+                            </td>
+                            <!-- Actions -->
                             <td class="text-end">
                                 @if (request.Status == "Pending")
                                 {
@@ -127,15 +160,19 @@
                                 }
                                 else if (request.Status == "Accepted")
                                 {
-                                    @if (request.EndDate.Date < DateTime.Today)
+                                    @if (request.BorrowingStatus == "Completed")
                                     {
                                         <a asp-controller="Review" asp-action="Index" asp-route-itemId="@request.ItemId" class="btn btn-sm btn-outline-primary fw-semibold">
                                             Review Item
                                         </a>
                                     }
-                                    else
+                                    else if (request.BorrowingStatus == "Ongoing")
                                     {
                                         <span class="badge bg-info-subtle text-info border border-info-subtle">Active Borrowing</span>
+                                    }
+                                    else if (request.BorrowingStatus == "Upcoming")
+                                    {
+                                        <span class="text-muted small">Not Started</span>
                                     }
                                 }
                                 else

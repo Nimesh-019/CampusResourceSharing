@@ -161,6 +161,7 @@
                         <th>Requested On</th>
                         <th>Student Message</th>
                         <th>Request Status</th>
+                        <th>Status</th>
                         <th>Decision On</th>
                     </tr>
                 </thead>
@@ -170,9 +171,7 @@
                     }
                     @foreach (var request in Model.Requests)
                     {
-                        var isCurrentlyActive = request.Status == "Accepted" &&
-                            today >= request.StartDate.Date &&
-                            today <= request.EndDate.Date;
+                        var isCurrentlyActive = request.IsOngoing;
 
                         <tr>
                             <td class="text-muted fw-semibold">@(index++)</td>
@@ -259,6 +258,37 @@
                                     <small class="text-warning-emphasis d-block fw-semibold mt-1">
                                         Awaiting Response
                                     </small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@request.Status</span>
+                                }
+                            </td>
+
+                            <!-- Status (Upcoming / Ongoing / Completed for approved; pending/rejected preserved) -->
+                            <td>
+                                @if (request.Status == "Accepted")
+                                {
+                                    @if (request.BorrowingStatus == "Upcoming")
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Upcoming</span>
+                                    }
+                                    else if (request.BorrowingStatus == "Ongoing")
+                                    {
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">Ongoing</span>
+                                    }
+                                    else if (request.BorrowingStatus == "Completed")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Completed</span>
+                                    }
+                                }
+                                else if (request.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else if (request.Status == "Rejected")
+                                {
+                                    <span class="badge bg-danger">Rejected</span>
                                 }
                                 else
                                 {
