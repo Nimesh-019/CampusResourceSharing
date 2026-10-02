@@ -45,6 +45,10 @@ packages/
 .env
 .env.*
 !.env.example
+appsettings*.local.json
+appsettings.Production.json
+secrets.json
+
 
 # ==========================================
 # Logs
