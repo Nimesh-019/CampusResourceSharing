@@ -11,23 +11,6 @@
         <p class="lead text-secondary mx-auto mb-4" style="max-width: 650px;">
             Discover useful resources shared by students across departments. Share what you don't use, and borrow what you need.
         </p>
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <a asp-controller="Item" asp-action="Create" class="btn btn-primary btn-lg px-4 fw-bold">
-                    + Add Item
-                </a>
-            }
-            else
-            {
-                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg px-4 fw-bold">
-                    Register to Start
-                </a>
-            }
-            <a asp-controller="Item" asp-action="Index" class="btn btn-outline-primary btn-lg px-4 fw-semibold">
-                Browse Available Items
-            </a>
-        </div>
     </div>
 
     <!-- Recent Items Section -->

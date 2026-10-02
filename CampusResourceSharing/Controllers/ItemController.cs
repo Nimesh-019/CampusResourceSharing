@@ -1,5 +1,6 @@
 using CampusResourceSharing.Data;
 using CampusResourceSharing.Models;
+using CampusResourceSharing.Services;
 using CampusResourceSharing.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,7 @@ namespace CampusResourceSharing.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
+        private readonly ICloudinaryService _cloudinaryService;
 
         private const long MaxImageSize = 5 * 1024 * 1024; // 5 MB
 
@@ -26,10 +28,12 @@ namespace CampusResourceSharing.Controllers
 
         public ItemController(
             ApplicationDbContext context,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            ICloudinaryService cloudinaryService)
         {
             _context = context;
             _environment = environment;
+            _cloudinaryService = cloudinaryService;
         }
 
         // GET: Item
@@ -231,10 +235,13 @@ namespace CampusResourceSharing.Controllers
             }
 
             string? imagePath = null;
+            string? imagePublicId = null;
 
             if (model.Image != null)
             {
-                imagePath = await SaveImageAsync(model.Image);
+                var (url, publicId) = await _cloudinaryService.UploadImageAsync(model.Image);
+                imagePath = url;
+                imagePublicId = publicId;
             }
 
             var item = new Item
@@ -244,6 +251,7 @@ namespace CampusResourceSharing.Controllers
                 Category = model.Category,
                 Condition = model.Condition,
                 ImagePath = imagePath,
+                ImagePublicId = imagePublicId,
                 OwnerId = userId,
                 IsAvailable = model.IsAvailable,
                 Status = ItemStatus.Pending,
@@ -343,8 +351,10 @@ namespace CampusResourceSharing.Controllers
 
             if (model.Image != null)
             {
-                DeleteImage(existingItem.ImagePath);
-                existingItem.ImagePath = await SaveImageAsync(model.Image);
+                await _cloudinaryService.DeleteImageAsync(existingItem.ImagePublicId, existingItem.ImagePath);
+                var (url, publicId) = await _cloudinaryService.UploadImageAsync(model.Image);
+                existingItem.ImagePath = url;
+                existingItem.ImagePublicId = publicId;
             }
 
             await _context.SaveChangesAsync();
@@ -399,7 +409,7 @@ namespace CampusResourceSharing.Controllers
                 return NotFound();
             }
 
-            DeleteImage(item.ImagePath);
+            await _cloudinaryService.DeleteImageAsync(item.ImagePublicId, item.ImagePath);
             _context.Items.Remove(item);
 
             await _context.SaveChangesAsync();
@@ -429,45 +439,6 @@ namespace CampusResourceSharing.Controllers
             }
 
             return true;
-        }
-
-        private async Task<string> SaveImageAsync(IFormFile image)
-        {
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "items");
-            Directory.CreateDirectory(uploadsFolder);
-
-            var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await image.CopyToAsync(stream);
-            }
-
-            return $"/uploads/items/{fileName}";
-        }
-
-        private void DeleteImage(string? imagePath)
-        {
-            if (string.IsNullOrEmpty(imagePath))
-            {
-                return;
-            }
-
-            var fileName = Path.GetFileName(imagePath);
-
-            if (string.IsNullOrEmpty(fileName))
-            {
-                return;
-            }
-
-            var filePath = Path.Combine(_environment.WebRootPath, "uploads", "items", fileName);
-
-            if (System.IO.File.Exists(filePath))
-            {
-                System.IO.File.Delete(filePath);
-            }
         }
     }
 }

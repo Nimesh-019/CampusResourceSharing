@@ -4,12 +4,11 @@ namespace CampusResourceSharing.Models
     {
         public static readonly List<string> Departments = new()
         {
-            "Computer Science / IT",
+            "Computer Science",
             "Mechanical Engineering",
             "Civil Engineering",
             "Electrical Engineering",
-            "Electronics",
-            "Other"
+            "Information Technology"
         };
     }
 
@@ -23,8 +22,7 @@ namespace CampusResourceSharing.Models
             "Lab Equipment",
             "Stationery",
             "Tools",
-            "Sports",
-            "Other"
+            "Sports"
         };
 
         public static readonly List<string> Conditions = new()

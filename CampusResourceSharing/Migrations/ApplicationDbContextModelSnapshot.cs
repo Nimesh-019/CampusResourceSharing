@@ -130,6 +130,10 @@ namespace CampusResourceSharing.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("ImagePublicId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 

@@ -39,6 +39,9 @@ namespace CampusResourceSharing.Models
         [StringLength(500)]
         public string? ImagePath { get; set; }
 
+        [StringLength(255)]
+        public string? ImagePublicId { get; set; }
+
         public bool IsAvailable { get; set; } = true;
 
         public ItemStatus Status { get; set; } = ItemStatus.Pending;
