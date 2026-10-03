@@ -1,13 +1,15 @@
 using CampusResourceSharing.Data;
 using CampusResourceSharing.Models;
-using CampusResourceSharing.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
+using CampusResourceSharing.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddScoped<ICloudinaryService, LocalImageService>();
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection")

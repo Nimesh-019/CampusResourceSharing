@@ -1,15 +1,3 @@
-// =========================================================================================
-// REFERENCE / DEPLOYMENT BACKUP
-// To re-enable Cloudinary for production deployment:
-// 1. Add CloudinaryDotNet NuGet package back to CampusResourceSharing.csproj:
-//    <PackageReference Include="CloudinaryDotNet" Version="1.29.3" />
-// 2. Restore this file as CloudinaryService.cs
-// 3. Register CloudinaryService in Program.cs:
-//    builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
-//    builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
-// =========================================================================================
-
-#if ENABLE_CLOUDINARY
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Hosting;
@@ -88,6 +76,7 @@ namespace CampusResourceSharing.Services
 
         public async Task<bool> DeleteImageAsync(string? publicId, string? imagePath = null)
         {
+            // 1. Try deleting via Cloudinary if publicId is provided or can be extracted
             var targetPublicId = publicId;
             if (string.IsNullOrWhiteSpace(targetPublicId) && !string.IsNullOrWhiteSpace(imagePath))
             {
@@ -113,6 +102,7 @@ namespace CampusResourceSharing.Services
                 }
             }
 
+            // 2. Backward compatibility: if imagePath is a local path, delete from wwwroot if exists
             if (!string.IsNullOrWhiteSpace(imagePath) &&
                 !imagePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
                 !imagePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -173,4 +163,3 @@ namespace CampusResourceSharing.Services
         }
     }
 }
-#endif
