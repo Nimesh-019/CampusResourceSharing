@@ -1,8 +1,5 @@
 using CampusResourceSharing.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace CampusResourceSharing.Data
 {
@@ -18,28 +15,15 @@ namespace CampusResourceSharing.Data
             var userManager = scope.ServiceProvider
                 .GetRequiredService<UserManager<ApplicationUser>>();
 
-            var configuration = scope.ServiceProvider
-                .GetRequiredService<IConfiguration>();
-
-            var logger = scope.ServiceProvider
-                .GetService<ILoggerFactory>()?
-                .CreateLogger("CampusResourceSharing.Data.DbInitializer");
-
             // Ensure Admin role exists
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
 
-            // Read Admin seed credentials from configuration
-            var adminEmail = configuration["AdminSeed:Email"];
-            var adminPassword = configuration["AdminSeed:Password"];
-
-            if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
-            {
-                logger?.LogInformation("Admin seed credentials (AdminSeed:Email / AdminSeed:Password) not provided. Skipping admin user creation.");
-                return;
-            }
+            // Default Admin account
+            const string adminEmail = "admin@gmail.com";
+            const string adminPassword = "Admin@123456";
 
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
 

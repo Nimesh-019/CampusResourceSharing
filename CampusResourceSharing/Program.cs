@@ -7,13 +7,6 @@ using CampusResourceSharing.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure port for Railway / container deployment if PORT environment variable is provided
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
-{
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-}
-
 // Add services to the container.
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
