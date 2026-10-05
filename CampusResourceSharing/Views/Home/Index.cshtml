@@ -2,31 +2,82 @@
 
 @{
     ViewData["Title"] = "Home";
+    var currentCategory = ViewBag.SelectedCategory as string ?? "All";
+    var currentCondition = ViewBag.SelectedCondition as string ?? "All";
+    var currentSort = ViewBag.SelectedSort as string ?? "Newest";
+    var searchTerm = ViewBag.SearchTerm as string;
 }
 
-<div class="container mt-4">
-    <!-- Hero Section -->
-    <div class="p-4 p-md-5 mb-4 rounded-3 bg-white shadow-sm text-center">
-        <h1 class="display-5 fw-bold text-primary mb-3">Campus Resource Sharing</h1>
-        <p class="lead text-secondary mx-auto mb-4" style="max-width: 650px;">
-            Discover useful resources shared by students across departments. Share what you don't use, and borrow what you need.
-        </p>
+<div class="container mt-2">
+    <!-- Header Section -->
+    <div class="mb-3">
+        <h3 class="fw-bold mb-1">Recent Available Items</h3>
     </div>
 
-    <!-- Recent Items Section -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="fw-bold mb-0">Recent Available Items</h3>
-        <a asp-controller="Item" asp-action="Index" class="text-decoration-none fw-semibold">
-            View All &rarr;
-        </a>
+    <!-- Search & Filter Card -->
+    <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="get" asp-controller="Home" asp-action="Index">
+                <div class="row g-3">
+                    <!-- Search Input -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small text-muted">Search Item</label>
+                        <input type="text" name="searchTerm" class="form-control" placeholder="Search by name or description..." value="@searchTerm" />
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small text-muted">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="All" selected="@(currentCategory == "All")">All Categories</option>
+                            @foreach (var cat in CampusResourceSharing.Models.ItemConstants.Categories)
+                            {
+                                <option value="@cat" selected="@(currentCategory == cat)">@cat</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Condition Filter -->
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold small text-muted">Condition</label>
+                        <select name="condition" class="form-select">
+                            <option value="All" selected="@(currentCondition == "All")">All Conditions</option>
+                            @foreach (var cond in CampusResourceSharing.Models.ItemConstants.Conditions)
+                            {
+                                <option value="@cond" selected="@(currentCondition == cond)">@cond</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small text-muted">Sort By</label>
+                        <select name="sortBy" class="form-select">
+                            <option value="Newest" selected="@(currentSort == "Newest")">Newest</option>
+                            <option value="NameAsc" selected="@(currentSort == "NameAsc")">Name A-Z</option>
+                            <option value="NameDesc" selected="@(currentSort == "NameDesc")">Name Z-A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        Search
+                    </button>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary px-3">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
     @if (!Model.Any())
     {
         <div class="alert alert-info text-center py-4 shadow-sm">
             <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
-            <h5 class="mb-1">No items available right now</h5>
-            <p class="mb-0 text-muted">Be the first to share an item with your fellow students!</p>
+            <h5 class="mb-1">No items found</h5>
+            <p class="mb-0 text-muted">Try adjusting your search terms or clearing the filters.</p>
         </div>
     }
     else

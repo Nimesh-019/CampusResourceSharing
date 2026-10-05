@@ -37,14 +37,15 @@ namespace CampusResourceSharing.Controllers
         }
 
         // GET: Item
-        // Shows available items shared by other students with search and filter
+        // Shows available items shared by other students with search, filter, and sorting
         [AllowAnonymous]
         public async Task<IActionResult> Index(
             string? searchTerm,
             string? category,
             string? condition,
             string? department,
-            string? availability)
+            string? availability,
+            string? sortBy = "Newest")
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -62,9 +63,10 @@ namespace CampusResourceSharing.Controllers
             // Search by Item Name or Description
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
+                var term = searchTerm.Trim().ToLower();
                 query = query.Where(i =>
-                    i.Name.Contains(searchTerm) ||
-                    (i.Description != null && i.Description.Contains(searchTerm)));
+                    i.Name.ToLower().Contains(term) ||
+                    (i.Description != null && i.Description.ToLower().Contains(term)));
             }
 
             // Filter by Category
@@ -95,15 +97,35 @@ namespace CampusResourceSharing.Controllers
                 query = query.Where(i => !i.IsAvailable);
             }
 
-            var items = await query
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
+            // Sort items
+            switch (sortBy)
+            {
+                case "NameAsc":
+                case "Name A-Z":
+                case "NameA-Z":
+                    query = query.OrderBy(i => i.Name);
+                    sortBy = "NameAsc";
+                    break;
+                case "NameDesc":
+                case "Name Z-A":
+                case "NameZ-A":
+                    query = query.OrderByDescending(i => i.Name);
+                    sortBy = "NameDesc";
+                    break;
+                default:
+                    query = query.OrderByDescending(i => i.CreatedAt);
+                    sortBy = "Newest";
+                    break;
+            }
+
+            var items = await query.ToListAsync();
 
             ViewBag.SearchTerm = searchTerm;
             ViewBag.SelectedCategory = category ?? "All";
             ViewBag.SelectedCondition = condition ?? "All";
             ViewBag.SelectedDepartment = department ?? "All";
             ViewBag.SelectedAvailability = availability ?? "Available";
+            ViewBag.SelectedSort = sortBy;
 
             return View(items);
         }
