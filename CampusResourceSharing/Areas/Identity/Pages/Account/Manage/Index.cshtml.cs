@@ -3,6 +3,7 @@ using CampusResourceSharing.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 {
@@ -103,6 +104,14 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 
             if (user.PhoneNumber != Input.PhoneNumber)
             {
+                var phoneExists = await _userManager.Users.AnyAsync(u => u.PhoneNumber == Input.PhoneNumber && u.Id != user.Id);
+                if (phoneExists)
+                {
+                    ModelState.AddModelError("Input.PhoneNumber", "This phone number is already registered with another account.");
+                    await LoadAsync(user);
+                    return Page();
+                }
+
                 user.PhoneNumber = Input.PhoneNumber;
                 hasChanges = true;
             }
