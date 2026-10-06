@@ -88,25 +88,8 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
 
             if (!ModelState.IsValid)
             {
-<<<<<<< HEAD
                 return Page();
             }
-=======
-                var phoneExists = await _userManager.Users.AnyAsync(u => u.PhoneNumber == Input.PhoneNumber);
-                if (phoneExists)
-                {
-                    ModelState.AddModelError("Input.PhoneNumber", "This phone number is already registered with another account.");
-                    return Page();
-                }
-
-                var user = new ApplicationUser
-                {
-                    FullName = Input.FullName,
-                    PhoneNumber = Input.PhoneNumber,
-                    Address = Input.Address,
-                    Department = Input.Department
-                };
->>>>>>> ec06e84e48f9fc56438b1f2e12c12b322dc6d14b
 
             // Normalize mobile number
             var normalizedPhone = PhoneNumberHelper.Normalize(Input.PhoneNumber);

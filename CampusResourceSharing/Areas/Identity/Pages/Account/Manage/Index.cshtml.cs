@@ -146,20 +146,8 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 
             if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
             {
-<<<<<<< HEAD
                 await _userManager.SetEmailAsync(user, email);
                 await _userManager.SetUserNameAsync(user, email);
-=======
-                var phoneExists = await _userManager.Users.AnyAsync(u => u.PhoneNumber == Input.PhoneNumber && u.Id != user.Id);
-                if (phoneExists)
-                {
-                    ModelState.AddModelError("Input.PhoneNumber", "This phone number is already registered with another account.");
-                    await LoadAsync(user);
-                    return Page();
-                }
-
-                user.PhoneNumber = Input.PhoneNumber;
->>>>>>> ec06e84e48f9fc56438b1f2e12c12b322dc6d14b
                 hasChanges = true;
             }
 
