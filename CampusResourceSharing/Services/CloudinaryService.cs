@@ -21,8 +21,14 @@ namespace CampusResourceSharing.Services
             _environment = environment;
             _logger = logger;
 
+            var cloudinaryUrl = Environment.GetEnvironmentVariable("CLOUDINARY_URL");
             var settings = config.Value;
-            if (!string.IsNullOrWhiteSpace(settings.CloudName) &&
+
+            if (!string.IsNullOrWhiteSpace(cloudinaryUrl))
+            {
+                _cloudinary = new Cloudinary(cloudinaryUrl);
+            }
+            else if (!string.IsNullOrWhiteSpace(settings.CloudName) &&
                 !string.IsNullOrWhiteSpace(settings.ApiKey) &&
                 !string.IsNullOrWhiteSpace(settings.ApiSecret) &&
                 settings.CloudName != "YOUR_CLOUD_NAME")
@@ -36,7 +42,7 @@ namespace CampusResourceSharing.Services
             }
             else
             {
-                _logger.LogWarning("Cloudinary is not fully configured in appsettings or environment variables.");
+                _logger.LogWarning("Cloudinary is not fully configured in user-secrets, appsettings, or environment variables.");
             }
         }
 

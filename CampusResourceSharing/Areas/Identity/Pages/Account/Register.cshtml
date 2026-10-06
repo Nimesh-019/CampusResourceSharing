@@ -30,7 +30,14 @@
 
                         <div class="mb-3">
                             <label asp-for="Input.PhoneNumber" class="form-label fw-semibold"></label>
-                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="e.g. 9876543210" />
+                            <input asp-for="Input.PhoneNumber" 
+                                   class="form-control" 
+                                   type="tel" 
+                                   inputmode="numeric" 
+                                   maxlength="10" 
+                                   placeholder="e.g. 9876543210" 
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                   onkeypress="return (event.charCode >= 48 && event.charCode <= 57);" />
                             <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
                         </div>
 
@@ -82,4 +89,30 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const phoneInput = document.getElementById('Input_PhoneNumber');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function () {
+                    this.value = this.value.replace(/\D/g, '').slice(0, 10);
+                });
+                phoneInput.addEventListener('keypress', function (e) {
+                    if (e.which < 48 || e.which > 57) {
+                        e.preventDefault();
+                    }
+                });
+                phoneInput.addEventListener('paste', function (e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+                    let digits = text.replace(/\D/g, '');
+                    if (digits.length === 12 && digits.startsWith('91')) {
+                        digits = digits.substring(2);
+                    } else if (digits.length === 11 && digits.startsWith('0')) {
+                        digits = digits.substring(1);
+                    }
+                    this.value = digits.slice(0, 10);
+                });
+            }
+        });
+    </script>
 }

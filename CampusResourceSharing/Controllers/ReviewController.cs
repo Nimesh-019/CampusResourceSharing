@@ -256,10 +256,27 @@ namespace CampusResourceSharing.Controllers
                 CreatedAt = DateTime.Now
             };
 
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Reviews.Add(review);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Your review has been submitted successfully!";
+            }
+            catch (DbUpdateException)
+            {
+                // Preserve the existing one-review-per-borrowing-request rule.
+                // Catch the expected duplicate-key/DbUpdateException scenario for concurrent/double submissions.
+                var alreadyReviewed = await _context.Reviews.AnyAsync(r => r.BorrowRequestId == eligibleRequest.Id);
+                if (alreadyReviewed)
+                {
+                    TempData["Error"] = "You have already submitted a review for this completed borrowing.";
+                    return RedirectToAction(nameof(Index), new { itemId = item.Id });
+                }
 
-            TempData["Success"] = "Your review has been submitted successfully!";
+                // Do not hide unrelated database errors
+                throw;
+            }
+
             return RedirectToAction(nameof(Index), new { itemId = item.Id });
         }
 

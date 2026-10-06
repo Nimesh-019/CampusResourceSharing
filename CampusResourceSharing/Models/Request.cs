@@ -51,7 +51,6 @@ namespace CampusResourceSharing.Models
 
         [ValidateNever]
         public Review? Review { get; set; }
-
         // ==========================================
         // Dynamic Borrowing Status Calculation
         // ==========================================

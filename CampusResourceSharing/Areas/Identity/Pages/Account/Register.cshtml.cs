@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using CampusResourceSharing.Models;
+using CampusResourceSharing.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusResourceSharing.Areas.Identity.Pages.Account
 {
@@ -84,19 +86,48 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
             returnUrl ??= Url.Content("~/");
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var user = new ApplicationUser
-                {
-                    FullName = Input.FullName,
-                    PhoneNumber = Input.PhoneNumber,
-                    Address = Input.Address,
-                    Department = Input.Department
-                };
+                return Page();
+            }
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+            // Normalize mobile number
+            var normalizedPhone = PhoneNumberHelper.Normalize(Input.PhoneNumber);
 
+            var email = Input.Email.Trim();
+
+            // Check email uniqueness case-insensitively
+            var existingUserByEmail = await _userManager.FindByEmailAsync(email);
+            if (existingUserByEmail != null)
+            {
+                ModelState.AddModelError("Input.Email", "This email address is already registered.");
+            }
+
+            // Check mobile number uniqueness
+            var isPhoneTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == normalizedPhone);
+            if (isPhoneTaken)
+            {
+                ModelState.AddModelError("Input.PhoneNumber", "This mobile number is already registered.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return Page();
+            }
+
+            var user = new ApplicationUser
+            {
+                FullName = Input.FullName.Trim(),
+                PhoneNumber = normalizedPhone,
+                Address = Input.Address.Trim(),
+                Department = Input.Department
+            };
+
+            await _userStore.SetUserNameAsync(user, email, CancellationToken.None);
+            await _emailStore.SetEmailAsync(user, email, CancellationToken.None);
+
+            try
+            {
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
@@ -109,7 +140,33 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
 
                 foreach (var error in result.Errors)
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    if (error.Code == nameof(IdentityErrorDescriber.DuplicateEmail) ||
+                        error.Code == nameof(IdentityErrorDescriber.DuplicateUserName))
+                    {
+                        ModelState.AddModelError("Input.Email", "This email address is already registered.");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                if (DatabaseExceptionHelper.IsUniqueConstraintViolation(ex, out var field))
+                {
+                    if (field == "PhoneNumber")
+                    {
+                        ModelState.AddModelError("Input.PhoneNumber", "This mobile number is already registered.");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("Input.Email", "This email address is already registered.");
+                    }
+                }
+                else
+                {
+                    throw;
                 }
             }
 

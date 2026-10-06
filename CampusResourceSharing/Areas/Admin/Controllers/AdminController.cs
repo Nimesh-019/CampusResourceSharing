@@ -39,10 +39,10 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
                 .Where(u => !adminIds.Contains(u.Id))
                 .CountAsync();
 
-            var totalItems = await _context.Items.CountAsync();
-            var pendingItems = await _context.Items.CountAsync(i => i.Status == ItemStatus.Pending);
-            var approvedItems = await _context.Items.CountAsync(i => i.Status == ItemStatus.Approved);
-            var rejectedItems = await _context.Items.CountAsync(i => i.Status == ItemStatus.Rejected);
+            var totalItems = await _context.Items.CountAsync(i => !i.IsDeleted);
+            var pendingItems = await _context.Items.CountAsync(i => !i.IsDeleted && i.Status == ItemStatus.Pending);
+            var approvedItems = await _context.Items.CountAsync(i => !i.IsDeleted && i.Status == ItemStatus.Approved);
+            var rejectedItems = await _context.Items.CountAsync(i => !i.IsDeleted && i.Status == ItemStatus.Rejected);
 
             ViewBag.TotalStudents = totalStudents;
             ViewBag.TotalItems = totalItems;

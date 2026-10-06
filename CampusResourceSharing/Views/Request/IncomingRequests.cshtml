@@ -66,10 +66,10 @@
                                     <div class="fw-semibold">@request.Requester.FullName</div>
                                     <small class="text-muted d-block">Dept: @request.Requester.Department</small>
                                     <small class="text-muted d-block">Email: @request.Requester.Email</small>
-                                    @if (request.Status == "Accepted" && !string.IsNullOrEmpty(request.Requester.PhoneNumber))
+                                    @* @if (request.Status == "Accepted" && !string.IsNullOrEmpty(request.Requester.PhoneNumber))
                                     {
                                         <small class="text-primary d-block fw-semibold">Phone: @request.Requester.PhoneNumber</small>
-                                    }
+                                    } *@
                                 }
                                 else
                                 {

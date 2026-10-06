@@ -26,7 +26,7 @@ namespace CampusResourceSharing.Controllers
 
             var query = _context.Items
                 .Include(i => i.Owner)
-                .Where(i => i.IsAvailable && i.Status == ItemStatus.Approved)
+                .Where(i => !i.IsDeleted && i.IsAvailable && i.Status == ItemStatus.Approved)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(userId))
@@ -89,6 +89,13 @@ namespace CampusResourceSharing.Controllers
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            var requestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            return View(new ErrorViewModel { RequestId = requestId });
         }
     }
 }

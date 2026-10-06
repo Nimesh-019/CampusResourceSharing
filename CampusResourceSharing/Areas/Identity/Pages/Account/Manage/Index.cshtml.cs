@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using CampusResourceSharing.Models;
+using CampusResourceSharing.Utilities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 {
@@ -34,6 +36,8 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
             [Display(Name = "Full Name")]
             public string FullName { get; set; } = string.Empty;
 
+            [Required(ErrorMessage = "Email is required.")]
+            [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
             [Display(Name = "Email Address")]
             public string Email { get; set; } = string.Empty;
 
@@ -52,19 +56,22 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
             public string Department { get; set; } = string.Empty;
         }
 
-        private async Task LoadAsync(ApplicationUser user)
+        private async Task LoadAsync(ApplicationUser user, bool resetInput = false)
         {
             var userName = await _userManager.GetUserNameAsync(user);
             Username = userName ?? string.Empty;
 
-            Input = new InputModel
+            if (resetInput)
             {
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                PhoneNumber = user.PhoneNumber ?? string.Empty,
-                Address = user.Address,
-                Department = user.Department
-            };
+                Input = new InputModel
+                {
+                    FullName = user.FullName,
+                    Email = user.Email ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    Address = user.Address,
+                    Department = user.Department
+                };
+            }
         }
 
         public async Task<IActionResult> OnGetAsync()
@@ -75,7 +82,7 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
             }
 
-            await LoadAsync(user);
+            await LoadAsync(user, resetInput: true);
             return Page();
         }
 
@@ -89,27 +96,70 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 
             if (!ModelState.IsValid)
             {
-                await LoadAsync(user);
+                await LoadAsync(user, resetInput: false);
+                return Page();
+            }
+
+            // Mobile number normalization & format validation
+            if (!PhoneNumberHelper.TryNormalize(Input.PhoneNumber, out var normalizedPhone))
+            {
+                ModelState.AddModelError("Input.PhoneNumber", "Please enter a valid 10-digit mobile number.");
+                await LoadAsync(user, resetInput: false);
+                return Page();
+            }
+
+            var email = Input.Email.Trim();
+
+            // Check if email was changed and is unique across OTHER users (case-insensitively)
+            if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+            {
+                var existingUserByEmail = await _userManager.FindByEmailAsync(email);
+                if (existingUserByEmail != null && existingUserByEmail.Id != user.Id)
+                {
+                    ModelState.AddModelError("Input.Email", "This email address is already registered.");
+                }
+            }
+
+            // Check if phone was changed and is unique across OTHER users
+            if (user.PhoneNumber != normalizedPhone)
+            {
+                var isPhoneTaken = await _userManager.Users.AnyAsync(u => u.PhoneNumber == normalizedPhone && u.Id != user.Id);
+                if (isPhoneTaken)
+                {
+                    ModelState.AddModelError("Input.PhoneNumber", "This mobile number is already registered.");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await LoadAsync(user, resetInput: false);
                 return Page();
             }
 
             bool hasChanges = false;
 
-            if (user.FullName != Input.FullName)
+            if (user.FullName != Input.FullName.Trim())
             {
-                user.FullName = Input.FullName;
+                user.FullName = Input.FullName.Trim();
                 hasChanges = true;
             }
 
-            if (user.PhoneNumber != Input.PhoneNumber)
+            if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
             {
-                user.PhoneNumber = Input.PhoneNumber;
+                await _userManager.SetEmailAsync(user, email);
+                await _userManager.SetUserNameAsync(user, email);
                 hasChanges = true;
             }
 
-            if (user.Address != Input.Address)
+            if (user.PhoneNumber != normalizedPhone)
             {
-                user.Address = Input.Address;
+                user.PhoneNumber = normalizedPhone;
+                hasChanges = true;
+            }
+
+            if (user.Address != Input.Address.Trim())
+            {
+                user.Address = Input.Address.Trim();
                 hasChanges = true;
             }
 
@@ -121,15 +171,50 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account.Manage
 
             if (hasChanges)
             {
-                var updateResult = await _userManager.UpdateAsync(user);
-                if (!updateResult.Succeeded)
+                try
                 {
-                    StatusMessage = "Error: Unexpected error when trying to update profile.";
-                    return RedirectToPage();
-                }
+                    var updateResult = await _userManager.UpdateAsync(user);
+                    if (!updateResult.Succeeded)
+                    {
+                        foreach (var error in updateResult.Errors)
+                        {
+                            if (error.Code == nameof(IdentityErrorDescriber.DuplicateEmail) ||
+                                error.Code == nameof(IdentityErrorDescriber.DuplicateUserName))
+                            {
+                                ModelState.AddModelError("Input.Email", "This email address is already registered.");
+                            }
+                            else
+                            {
+                                ModelState.AddModelError(string.Empty, error.Description);
+                            }
+                        }
+                        await LoadAsync(user, resetInput: false);
+                        return Page();
+                    }
 
-                await _signInManager.RefreshSignInAsync(user);
-                StatusMessage = "Your profile has been updated successfully.";
+                    await _signInManager.RefreshSignInAsync(user);
+                    StatusMessage = "Your profile has been updated successfully.";
+                }
+                catch (DbUpdateException ex)
+                {
+                    if (DatabaseExceptionHelper.IsUniqueConstraintViolation(ex, out var field))
+                    {
+                        if (field == "PhoneNumber")
+                        {
+                            ModelState.AddModelError("Input.PhoneNumber", "This mobile number is already registered.");
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("Input.Email", "This email address is already registered.");
+                        }
+                        await LoadAsync(user, resetInput: false);
+                        return Page();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
             }
             else
             {

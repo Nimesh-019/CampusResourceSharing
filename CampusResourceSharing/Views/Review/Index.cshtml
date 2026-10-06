@@ -210,7 +210,7 @@
                                 </div>
 
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                                    <button type="submit" id="btnSubmitReview" class="btn btn-primary fw-bold px-4">
                                         Submit Review
                                     </button>
                                 </div>
@@ -386,6 +386,19 @@
 
                 // Initialize with current select value
                 updateStars(parseInt(ratingSelect.value, 10));
+            }
+
+            const reviewForm = document.querySelector('form[action*="Review"][action*="Create"]');
+            if (reviewForm) {
+                reviewForm.addEventListener('submit', function () {
+                    const submitBtn = document.getElementById('btnSubmitReview');
+                    if (submitBtn && !submitBtn.disabled) {
+                        setTimeout(function () {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Submitting...';
+                        }, 10);
+                    }
+                });
             }
         });
     </script>
