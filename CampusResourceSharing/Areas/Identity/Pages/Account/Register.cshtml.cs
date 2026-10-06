@@ -48,7 +48,7 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
             public string Email { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Phone Number is required.")]
-            [Phone(ErrorMessage = "Please enter a valid phone number.")]
+            [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
             [Display(Name = "Phone Number")]
             public string PhoneNumber { get; set; } = string.Empty;
 

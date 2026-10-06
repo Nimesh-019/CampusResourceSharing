@@ -30,7 +30,7 @@
 
                         <div class="mb-3">
                             <label asp-for="Input.PhoneNumber" class="form-label fw-semibold"></label>
-                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="e.g. 9876543210" />
+                            <input asp-for="Input.PhoneNumber" class="form-control" placeholder="e.g. 9876543210" maxlength="10" inputmode="numeric" />
                             <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
                         </div>
 
