@@ -50,7 +50,7 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
             public string Email { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Phone Number is required.")]
-            [Phone(ErrorMessage = "Please enter a valid phone number.")]
+            [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
             [Display(Name = "Phone Number")]
             public string PhoneNumber { get; set; } = string.Empty;
 
@@ -88,8 +88,25 @@ namespace CampusResourceSharing.Areas.Identity.Pages.Account
 
             if (!ModelState.IsValid)
             {
+<<<<<<< HEAD
                 return Page();
             }
+=======
+                var phoneExists = await _userManager.Users.AnyAsync(u => u.PhoneNumber == Input.PhoneNumber);
+                if (phoneExists)
+                {
+                    ModelState.AddModelError("Input.PhoneNumber", "This phone number is already registered with another account.");
+                    return Page();
+                }
+
+                var user = new ApplicationUser
+                {
+                    FullName = Input.FullName,
+                    PhoneNumber = Input.PhoneNumber,
+                    Address = Input.Address,
+                    Department = Input.Department
+                };
+>>>>>>> ec06e84e48f9fc56438b1f2e12c12b322dc6d14b
 
             // Normalize mobile number
             var normalizedPhone = PhoneNumberHelper.Normalize(Input.PhoneNumber);
