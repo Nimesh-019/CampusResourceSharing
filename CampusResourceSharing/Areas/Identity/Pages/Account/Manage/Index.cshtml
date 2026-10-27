@@ -40,7 +40,14 @@
 
                         <div class="mb-3">
                             <label asp-for="Input.PhoneNumber" class="form-label fw-semibold"></label>
-                            <input asp-for="Input.PhoneNumber" class="form-control" />
+                            <input asp-for="Input.PhoneNumber" 
+                                   class="form-control" 
+                                   type="tel" 
+                                   inputmode="numeric" 
+                                   maxlength="10" 
+                                   placeholder="e.g. 9876543210" 
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);"
+                                   onkeypress="return (event.charCode >= 48 && event.charCode <= 57);" />
                             <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
                         </div>
 

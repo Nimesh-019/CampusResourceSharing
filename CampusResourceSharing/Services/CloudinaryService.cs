@@ -20,6 +20,7 @@ namespace CampusResourceSharing.Services
         {
             _environment = environment;
             _logger = logger;
+
             var cloudinaryUrl = Environment.GetEnvironmentVariable("CLOUDINARY_URL");
             var settings = config.Value;
 
