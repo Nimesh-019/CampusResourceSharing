@@ -20,6 +20,21 @@ namespace CampusResourceSharing.Data
         {
             base.OnModelCreating(builder);
 
+            builder.Entity<ApplicationUser>(entity =>
+            {
+                entity.Property(u => u.PhoneNumber)
+                    .HasMaxLength(20);
+
+                entity.HasIndex(u => u.PhoneNumber)
+                    .IsUnique()
+                    .HasFilter("[PhoneNumber] IS NOT NULL");
+
+                entity.HasIndex(u => u.NormalizedEmail)
+                    .HasDatabaseName("EmailIndex")
+                    .IsUnique()
+                    .HasFilter("[NormalizedEmail] IS NOT NULL");
+            });
+
             builder.Entity<Item>()
                 .HasOne(i => i.Owner)
                 .WithMany()

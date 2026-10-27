@@ -25,6 +25,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
         {
             var items = await _context.Items
                 .Include(i => i.Owner)
+                .Where(i => !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
@@ -37,7 +38,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
         {
             var items = await _context.Items
                 .Include(i => i.Owner)
-                .Where(i => i.Status == ItemStatus.Pending)
+                .Where(i => !i.IsDeleted && i.Status == ItemStatus.Pending)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
@@ -47,10 +48,10 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
         // GET: /Admin/Items/Approved
         [HttpGet]
         public async Task<IActionResult> Approved()
-        {
+        {       
             var items = await _context.Items
                 .Include(i => i.Owner)
-                .Where(i => i.Status == ItemStatus.Approved)
+                .Where(i => !i.IsDeleted && i.Status == ItemStatus.Approved)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
@@ -129,7 +130,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
         {
             var items = await _context.Items
                 .Include(i => i.Owner)
-                .Where(i => i.Status == ItemStatus.Rejected)
+                .Where(i => !i.IsDeleted && i.Status == ItemStatus.Rejected)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 

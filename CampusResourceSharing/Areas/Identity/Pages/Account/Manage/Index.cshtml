@@ -33,7 +33,8 @@
 
                         <div class="mb-3">
                             <label asp-for="Input.Email" class="form-label fw-semibold"></label>
-                            <input asp-for="Input.Email" class="form-control" disabled readonly />
+                            <input asp-for="Input.Email" class="form-control" />
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
                             <div class="form-text">Your email address is your login username.</div>
                         </div>
 

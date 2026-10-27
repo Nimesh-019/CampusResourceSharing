@@ -50,7 +50,6 @@
                         <th>Duration</th>
                         <th>Requested On</th>
                         <th>Message</th>
-                        <th>Request Status</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -95,25 +94,6 @@
                                 else
                                 {
                                     <span class="text-muted small">No message</span>
-                                }
-                            </td>
-                            <!-- Request Status (Pending / Accepted / Rejected) -->
-                            <td>
-                                @if (request.Status == "Pending")
-                                {
-                                    <span class="badge bg-warning text-dark">Pending</span>
-                                }
-                                else if (request.Status == "Accepted")
-                                {
-                                    <span class="badge bg-success">Accepted</span>
-                                }
-                                else if (request.Status == "Rejected")
-                                {
-                                    <span class="badge bg-danger">Rejected</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">@request.Status</span>
                                 }
                             </td>
                             <!-- Borrowing Status (Upcoming / Ongoing / Completed for approved; pending/rejected preserved) -->

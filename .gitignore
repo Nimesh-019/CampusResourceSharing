@@ -76,3 +76,13 @@ desktop.ini
 # ASP.NET generated files
 # ==========================================
 wwwroot/lib/
+
+# ==========================================
+# Project Reports / Documentation
+# ==========================================
+CRS_Project_Report_Output/
+[Pp]roject [Rr]eport/
+[Pp]roject_[Rr]eport/
+*[Rr]eport*.pdf
+*[Rr]eport*.docx
+*[Rr]eport*.doc

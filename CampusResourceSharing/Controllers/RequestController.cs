@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 
 namespace CampusResourceSharing.Controllers
@@ -13,6 +14,8 @@ namespace CampusResourceSharing.Controllers
     public class RequestController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _requestCreationLocks = new();
+        private static readonly ConcurrentDictionary<int, SemaphoreSlim> _acceptLocks = new();
 
         public RequestController(ApplicationDbContext context)
         {
@@ -27,11 +30,9 @@ namespace CampusResourceSharing.Controllers
             var item = await _context.Items
                 .FirstOrDefaultAsync(i => i.Id == itemId);
 
-            if (item == null)
+            if (item == null || item.IsDeleted)
             {
-                return Content(
-                    $"RequestController reached successfully, but Item with ID {itemId} was not found in the database."
-                );
+                return NotFound();
             }
 
             if (item.Status != ItemStatus.Approved)
@@ -40,22 +41,17 @@ namespace CampusResourceSharing.Controllers
                 return RedirectToAction("Index", "Item");
             }
 
-            var currentUserId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (item.OwnerId == currentUserId)
             {
-                TempData["Error"] =
-                    "You cannot request your own item.";
-
+                TempData["Error"] = "You cannot request your own item.";
                 return RedirectToAction("Index", "Item");
             }
 
             if (!item.IsAvailable)
             {
-                TempData["Error"] =
-                    "This item is currently unavailable.";
-
+                TempData["Error"] = "This item is currently unavailable.";
                 return RedirectToAction("Index", "Item");
             }
 
@@ -74,7 +70,7 @@ namespace CampusResourceSharing.Controllers
             var item = await _context.Items
                 .FirstOrDefaultAsync(i => i.Id == itemId);
 
-            if (item == null)
+            if (item == null || item.IsDeleted)
             {
                 return NotFound();
             }
@@ -94,6 +90,12 @@ namespace CampusResourceSharing.Controllers
                 return RedirectToAction("Index", "Item");
             }
 
+            if (!item.IsAvailable)
+            {
+                ViewBag.ErrorMessage = "This item is currently unavailable.";
+                return View();
+            }
+
             // Validate date logic
             if (startDate.Date < DateTime.Today)
             {
@@ -110,52 +112,84 @@ namespace CampusResourceSharing.Controllers
                 return View();
             }
 
-            // Check item overall availability and check for overlapping accepted requests
-            var isOverlapping = await _context.Requests
-                .AnyAsync(r =>
-                    r.ItemId == itemId &&
-                    r.Status == "Accepted" &&
-                    r.StartDate.Date <= endDate.Date &&
-                    r.EndDate.Date >= startDate.Date);
+            // Concurrency protection against duplicate submissions and race conditions
+            var lockKey = $"{currentUserId}_{itemId}";
+            var semaphore = _requestCreationLocks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
 
-            if (!item.IsAvailable || isOverlapping)
+            try
             {
-                ViewBag.ErrorMessage = "Item is not available for that duration.";
-                return View();
+                // Check item overall availability and check for overlapping accepted requests
+                var isOverlapping = await _context.Requests
+                    .AnyAsync(r =>
+                        r.ItemId == itemId &&
+                        r.Status == "Accepted" &&
+                        r.StartDate.Date <= endDate.Date &&
+                        r.EndDate.Date >= startDate.Date);
+
+                if (!item.IsAvailable || isOverlapping)
+                {
+                    ViewBag.ErrorMessage = "Item is not available for that duration.";
+                    return View();
+                }
+
+                // Check for duplicate pending request for overlapping duration
+                var existingPendingRequest = await _context.Requests
+                    .AnyAsync(r =>
+                        r.ItemId == itemId &&
+                        r.RequesterId == currentUserId &&
+                        r.Status == "Pending" &&
+                        r.StartDate.Date <= endDate.Date &&
+                        r.EndDate.Date >= startDate.Date);
+
+                if (existingPendingRequest)
+                {
+                    ViewBag.ErrorMessage = "You already have a pending request for this item during this duration.";
+                    return View();
+                }
+
+                var request = new Request
+                {
+                    ItemId = itemId,
+                    RequesterId = currentUserId!,
+                    StartDate = startDate.Date,
+                    EndDate = endDate.Date,
+                    Message = message,
+                    Status = "Pending",
+                    RequestedAt = DateTime.Now
+                };
+
+                try
+                {
+                    _context.Requests.Add(request);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // Catch duplicate submission race condition at DB level
+                    var duplicateExists = await _context.Requests
+                        .AnyAsync(r =>
+                            r.ItemId == itemId &&
+                            r.RequesterId == currentUserId &&
+                            r.Status == "Pending" &&
+                            r.StartDate.Date <= endDate.Date &&
+                            r.EndDate.Date >= startDate.Date);
+
+                    if (duplicateExists)
+                    {
+                        ViewBag.ErrorMessage = "You already have a pending request for this item during this duration.";
+                        return View();
+                    }
+                    throw;
+                }
+
+                TempData["Success"] = "Item request sent successfully.";
+                return RedirectToAction(nameof(MyRequests));
             }
-
-            // Check for duplicate pending request for overlapping duration
-            var existingPendingRequest = await _context.Requests
-                .AnyAsync(r =>
-                    r.ItemId == itemId &&
-                    r.RequesterId == currentUserId &&
-                    r.Status == "Pending" &&
-                    r.StartDate.Date <= endDate.Date &&
-                    r.EndDate.Date >= startDate.Date);
-
-            if (existingPendingRequest)
+            finally
             {
-                ViewBag.ErrorMessage = "You already have a pending request for this item during this duration.";
-                return View();
+                semaphore.Release();
             }
-
-            var request = new Request
-            {
-                ItemId = itemId,
-                RequesterId = currentUserId!,
-                StartDate = startDate.Date,
-                EndDate = endDate.Date,
-                Message = message,
-                Status = "Pending",
-                RequestedAt = DateTime.Now
-            };
-
-            _context.Requests.Add(request);
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = "Item request sent successfully.";
-
-            return RedirectToAction(nameof(MyRequests));
         }
 
         // GET: Request/IncomingRequests
@@ -189,18 +223,10 @@ namespace CampusResourceSharing.Controllers
                 return NotFound();
             }
 
-            // Check if there is already an accepted request overlapping with this duration
-            var isOverlapping = await _context.Requests
-                .AnyAsync(r =>
-                    r.ItemId == request.ItemId &&
-                    r.Id != request.Id &&
-                    r.Status == "Accepted" &&
-                    r.StartDate.Date <= request.EndDate.Date &&
-                    r.EndDate.Date >= request.StartDate.Date);
-
-            if (isOverlapping)
+            // Issue 5: State Machine Guard - Accept works ONLY when Status is "Pending"
+            if (!string.Equals(request.Status, "Pending", StringComparison.OrdinalIgnoreCase))
             {
-                TempData["Error"] = "Item is not available for that duration because another request is already accepted.";
+                TempData["Error"] = $"Cannot accept this request because it is already marked as {request.Status}.";
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
@@ -208,16 +234,107 @@ namespace CampusResourceSharing.Controllers
                 return RedirectToAction(nameof(IncomingRequests));
             }
 
-            request.Status = "Accepted";
-            request.RespondedAt = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            TempData["Success"] = "Request accepted successfully.";
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            if (request.Item!.IsDeleted || !request.Item.IsAvailable)
             {
-                return Redirect(returnUrl);
+                TempData["Error"] = "This item is no longer available.";
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+                return RedirectToAction(nameof(IncomingRequests));
             }
-            return RedirectToAction(nameof(IncomingRequests));
+
+            // Issue 2: Concurrency protection for overlapping request acceptance
+            var semaphore = _acceptLocks.GetOrAdd(request.ItemId, _ => new SemaphoreSlim(1, 1));
+            await semaphore.WaitAsync();
+
+            try
+            {
+                Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction = null;
+                if (_context.Database.IsRelational())
+                {
+                    transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+                }
+
+                try
+                {
+                    // Re-check inside transaction and lock:
+                    // Check if there is already an accepted request overlapping with this duration
+                    var isOverlapping = await _context.Requests
+                        .AnyAsync(r =>
+                            r.ItemId == request.ItemId &&
+                            r.Id != request.Id &&
+                            r.Status == "Accepted" &&
+                            r.StartDate.Date <= request.EndDate.Date &&
+                            r.EndDate.Date >= request.StartDate.Date);
+
+                    if (isOverlapping)
+                    {
+                        if (transaction != null) await transaction.RollbackAsync();
+                        TempData["Error"] = "Item is not available for that duration because another request is already accepted.";
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        {
+                            return Redirect(returnUrl);
+                        }
+                        return RedirectToAction(nameof(IncomingRequests));
+                    }
+
+                    // Re-verify request is still pending
+                    var freshRequest = await _context.Requests.FirstOrDefaultAsync(r => r.Id == id);
+                    if (freshRequest == null || !string.Equals(freshRequest.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (transaction != null) await transaction.RollbackAsync();
+                        TempData["Error"] = "This request is no longer pending.";
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        {
+                            return Redirect(returnUrl);
+                        }
+                        return RedirectToAction(nameof(IncomingRequests));
+                    }
+
+                    freshRequest.Status = "Accepted";
+                    freshRequest.RespondedAt = DateTime.Now;
+                    await _context.SaveChangesAsync();
+
+                    if (transaction != null)
+                    {
+                        await transaction.CommitAsync();
+                    }
+
+                    TempData["Success"] = "Request accepted successfully.";
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    return RedirectToAction(nameof(IncomingRequests));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (transaction != null) await transaction.RollbackAsync();
+                    TempData["Error"] = "The request was modified concurrently. Please refresh and try again.";
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    return RedirectToAction(nameof(IncomingRequests));
+                }
+                catch (Exception)
+                {
+                    if (transaction != null) await transaction.RollbackAsync();
+                    throw;
+                }
+                finally
+                {
+                    if (transaction != null)
+                    {
+                        await transaction.DisposeAsync();
+                    }
+                }
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         }
 
         // POST: Request/Reject/5
@@ -234,6 +351,17 @@ namespace CampusResourceSharing.Controllers
             if (request == null)
             {
                 return NotFound();
+            }
+
+            // Issue 5: State Machine Guard - Reject works ONLY when Status is "Pending"
+            if (!string.Equals(request.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = $"Cannot reject this request because it is already marked as {request.Status}.";
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    return Redirect(returnUrl);
+                }
+                return RedirectToAction(nameof(IncomingRequests));
             }
 
             request.Status = "Rejected";

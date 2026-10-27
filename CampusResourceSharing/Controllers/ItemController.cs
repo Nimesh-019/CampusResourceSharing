@@ -51,7 +51,7 @@ namespace CampusResourceSharing.Controllers
 
             var query = _context.Items
                 .Include(i => i.Owner)
-                .Where(i => i.Status == ItemStatus.Approved)
+                .Where(i => !i.IsDeleted && i.Status == ItemStatus.Approved)
                 .AsQueryable();
 
             // Requirement 9: Exclude logged-in student's own items from available list to request
@@ -142,7 +142,7 @@ namespace CampusResourceSharing.Controllers
             }
 
             var items = await _context.Items
-                .Where(i => i.OwnerId == userId)
+                .Where(i => i.OwnerId == userId && !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
@@ -215,6 +215,12 @@ namespace CampusResourceSharing.Controllers
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var isAdmin = User.IsInRole("Admin");
+
+            // Only allow viewing deleted items if current user is owner or admin
+            if (item.IsDeleted && item.OwnerId != currentUserId && !isAdmin)
+            {
+                return NotFound();
+            }
 
             // Only allow viewing non-approved items if current user is owner or admin
             if (item.Status != ItemStatus.Approved && item.OwnerId != currentUserId && !isAdmin)
@@ -303,7 +309,7 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId && !i.IsDeleted);
 
             if (item == null)
             {
@@ -342,7 +348,7 @@ namespace CampusResourceSharing.Controllers
             }
 
             var existingItem = await _context.Items
-                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId && !i.IsDeleted);
 
             if (existingItem == null)
             {
@@ -373,10 +379,12 @@ namespace CampusResourceSharing.Controllers
 
             if (model.Image != null)
             {
-                await _cloudinaryService.DeleteImageAsync(existingItem.ImagePublicId, existingItem.ImagePath);
+                var oldPublicId = existingItem.ImagePublicId;
+                var oldPath = existingItem.ImagePath;
                 var (url, publicId) = await _cloudinaryService.UploadImageAsync(model.Image);
                 existingItem.ImagePath = url;
                 existingItem.ImagePublicId = publicId;
+                await _cloudinaryService.DeleteImageAsync(oldPublicId, oldPath);
             }
 
             await _context.SaveChangesAsync();
@@ -401,11 +409,38 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId && !i.IsDeleted);
 
             if (item == null)
             {
                 return NotFound();
+            }
+
+            // Check whether the item has any active (ongoing) or upcoming accepted borrowing
+            var today = DateTime.Today;
+            var activeOrUpcomingAcceptedRequests = await _context.Requests
+                .Where(r => r.ItemId == item.Id && r.Status == "Accepted" && r.EndDate.Date >= today)
+                .ToListAsync();
+
+            if (activeOrUpcomingAcceptedRequests.Any())
+            {
+                var hasOngoing = activeOrUpcomingAcceptedRequests.Any(r => r.StartDate.Date <= today && r.EndDate.Date >= today);
+                var hasUpcoming = activeOrUpcomingAcceptedRequests.Any(r => r.StartDate.Date > today);
+
+                if (hasOngoing && hasUpcoming)
+                {
+                    TempData["Error"] = "Cannot delete this item because it has active and upcoming accepted borrowings. Please wait until all borrowings are completed.";
+                }
+                else if (hasOngoing)
+                {
+                    TempData["Error"] = "Cannot delete this item because it is currently being borrowed.";
+                }
+                else
+                {
+                    TempData["Error"] = "Cannot delete this item because it has an upcoming accepted borrowing.";
+                }
+
+                return RedirectToAction(nameof(MyItems));
             }
 
             return View(item);
@@ -424,18 +459,74 @@ namespace CampusResourceSharing.Controllers
             }
 
             var item = await _context.Items
-                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId);
+                .FirstOrDefaultAsync(i => i.Id == id && i.OwnerId == userId && !i.IsDeleted);
 
             if (item == null)
             {
                 return NotFound();
             }
 
-            await _cloudinaryService.DeleteImageAsync(item.ImagePublicId, item.ImagePath);
-            _context.Items.Remove(item);
+            // Server-side validation: Block deletion if item has active (ongoing) or upcoming accepted borrowings
+            var today = DateTime.Today;
+            var activeOrUpcoming = await _context.Requests
+                .Where(r => r.ItemId == item.Id && r.Status == "Accepted" && r.EndDate.Date >= today)
+                .ToListAsync();
 
-            await _context.SaveChangesAsync();
-            TempData["Success"] = "Item removed successfully.";
+            if (activeOrUpcoming.Any())
+            {
+                var hasOngoing = activeOrUpcoming.Any(r => r.StartDate.Date <= today && r.EndDate.Date >= today);
+                var hasUpcoming = activeOrUpcoming.Any(r => r.StartDate.Date > today);
+
+                if (hasOngoing && hasUpcoming)
+                {
+                    TempData["Error"] = "Cannot delete this item because it has active and upcoming accepted borrowings. Please wait until all borrowings are completed.";
+                }
+                else if (hasOngoing)
+                {
+                    TempData["Error"] = "Cannot delete this item because it is currently being borrowed.";
+                }
+                else
+                {
+                    TempData["Error"] = "Cannot delete this item because it has an upcoming accepted borrowing.";
+                }
+
+                return RedirectToAction(nameof(MyItems));
+            }
+
+            // Check if item has any borrowing history or reviews
+            var hasRequests = await _context.Requests.AnyAsync(r => r.ItemId == item.Id);
+            var hasReviews = await _context.Reviews.AnyAsync(r => r.ItemId == item.Id);
+
+            if (hasRequests || hasReviews)
+            {
+                // Safe soft-delete / disable:
+                // Preserves historical borrowing requests and reviews
+                // Avoids cascade deletes and foreign-key exceptions
+                item.IsDeleted = true;
+                item.IsAvailable = false;
+
+                // Reject any lingering pending requests since the item is removed
+                var pendingRequests = await _context.Requests
+                    .Where(r => r.ItemId == item.Id && r.Status == "Pending")
+                    .ToListAsync();
+
+                foreach (var req in pendingRequests)
+                {
+                    req.Status = "Rejected";
+                    req.RespondedAt = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Item has been removed and archived.";
+            }
+            else
+            {
+                // No requests and no reviews: safely physically delete and clean up image
+                await _cloudinaryService.DeleteImageAsync(item.ImagePublicId, item.ImagePath);
+                _context.Items.Remove(item);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Item removed successfully.";
+            }
 
             return RedirectToAction(nameof(MyItems));
         }

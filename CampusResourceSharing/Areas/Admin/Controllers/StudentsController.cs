@@ -34,6 +34,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
                 .ToListAsync();
 
             var studentItemCounts = await _context.Items
+                .Where(i => !i.IsDeleted)
                 .GroupBy(i => i.OwnerId)
                 .Select(g => new { OwnerId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(g => g.OwnerId, g => g.Count);
@@ -60,7 +61,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            var itemCount = await _context.Items.CountAsync(i => i.OwnerId == id);
+            var itemCount = await _context.Items.CountAsync(i => i.OwnerId == id && !i.IsDeleted);
             ViewBag.ItemCount = itemCount;
 
             return View(student);
@@ -84,7 +85,7 @@ namespace CampusResourceSharing.Areas.Admin.Controllers
             }
 
             var items = await _context.Items
-                .Where(i => i.OwnerId == id)
+                .Where(i => i.OwnerId == id && !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 

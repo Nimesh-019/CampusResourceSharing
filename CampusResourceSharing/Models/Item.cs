@@ -44,6 +44,8 @@ namespace CampusResourceSharing.Models
 
         public bool IsAvailable { get; set; } = true;
 
+        public bool IsDeleted { get; set; } = false;
+
         public ItemStatus Status { get; set; } = ItemStatus.Pending;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
